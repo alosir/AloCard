@@ -28,8 +28,11 @@ releases/
 *.apk
 *.aab
 
+# ---- 设计原型（设计稿属本地材料，仓库仅保留代码与文档）----
+prototype/
+.prototype-work/
+
 # ---- 系统杂物 ----
 Thumbs.db
 .DS_Store
 desktop.ini
-prototype/app-(1).css
