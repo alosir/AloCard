@@ -32,8 +32,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.alosir.card.data.update.UpdateCheckResult
+import com.alosir.card.ui.applock.Biometrics
 import com.alosir.card.ui.theme.AloCardTheme
 import com.alosir.card.ui.common.FilledField
 import com.alosir.card.ui.common.HintText
@@ -56,16 +60,49 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onSetupPin: () -> Unit,
     onChangePin: () -> Unit,
+    onVerifyPin: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val lockEnabled by viewModel.lockEnabled.collectAsStateWithLifecycle()
+    val biometricEnabled by viewModel.biometricEnabled.collectAsStateWithLifecycle()
     val lastBackupAt by viewModel.lastBackupAt.collectAsStateWithLifecycle()
     val updateCheck by viewModel.updateCheck.collectAsStateWithLifecycle()
     val downloadProgress by viewModel.downloadProgress.collectAsStateWithLifecycle()
     val changelogText by viewModel.changelog.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val activity = context as? android.app.Activity
     val scope = rememberCoroutineScope()
+
+    // 锁流程回收：从 PIN 设置/验证页返回后，按挂起动作完成开关（项 8）
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            when (viewModel.pendingLockAction.value) {
+                SettingsViewModel.PendingLockAction.ENABLE_PIN -> {
+                    if (viewModel.hasPinNow()) viewModel.enablePasswordLock()
+                    else viewModel.markPendingLockAction(null)
+                }
+                SettingsViewModel.PendingLockAction.DISABLE_PIN -> {
+                    if (viewModel.isSessionUnlockedNow()) viewModel.disablePasswordLockAndClear()
+                    else viewModel.markPendingLockAction(null)
+                }
+                SettingsViewModel.PendingLockAction.ENABLE_BIOMETRIC -> {
+                    if (viewModel.hasPinNow()) {
+                        Biometrics.prompt(
+                            activity = activity,
+                            title = "开启指纹锁",
+                            subtitle = "验证本机指纹以开启",
+                            negativeText = "取消",
+                            onSuccess = { viewModel.setBiometricLock(true) },
+                        )
+                    }
+                    viewModel.markPendingLockAction(null)
+                }
+                null -> {}
+            }
+        }
+    }
 
     var showChangelog by remember { mutableStateOf(false) }
 
@@ -135,17 +172,67 @@ fun SettingsScreen(
         ) {
             Section {
                 SectionTitle("安全")
+                // 密码锁：off→on 先进设置流程（输两遍）；on→off 先验证，通过后关闭并清空密码
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("应用锁", style = MaterialTheme.typography.bodyLarge)
-                        HintText("指纹优先，4 位数字密码兜底；后台超时需重新验证。")
+                        Text("密码锁", style = MaterialTheme.typography.bodyLarge)
+                        HintText("4 位数字密码；开启后进入 App 需验证")
                     }
                     Switch(
                         checked = lockEnabled,
-                        onCheckedChange = { viewModel.setLockEnabled(it) },
+                        onCheckedChange = {
+                            if (lockEnabled) {
+                                viewModel.markPendingLockAction(SettingsViewModel.PendingLockAction.DISABLE_PIN)
+                                onVerifyPin()
+                            } else {
+                                viewModel.markPendingLockAction(SettingsViewModel.PendingLockAction.ENABLE_PIN)
+                                onSetupPin()
+                            }
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedTrackColor = AloCardTheme.colors.gold,
+                        ),
+                    )
+                }
+                // 指纹锁：与密码锁并列；开启/关闭都需先通过本机指纹验证
+                val bioCapable = remember { Biometrics.isStrongAvailable(context) }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("指纹锁", style = MaterialTheme.typography.bodyLarge)
+                        HintText(if (bioCapable) "指纹优先解锁；密码作为兜底" else "本机不支持指纹或未录入指纹")
+                    }
+                    Switch(
+                        checked = biometricEnabled,
+                        enabled = bioCapable,
+                        onCheckedChange = {
+                            if (biometricEnabled) {
+                                Biometrics.prompt(
+                                    activity = activity,
+                                    title = "关闭指纹锁",
+                                    subtitle = "验证指纹以关闭并清除本机指纹记录",
+                                    negativeText = "取消",
+                                    onSuccess = { viewModel.setBiometricLock(false) },
+                                )
+                            } else if (!viewModel.hasPinNow()) {
+                                // 先设密码作兜底，返回后自动唤起指纹验证
+                                viewModel.markPendingLockAction(SettingsViewModel.PendingLockAction.ENABLE_BIOMETRIC)
+                                onSetupPin()
+                            } else {
+                                Biometrics.prompt(
+                                    activity = activity,
+                                    title = "开启指纹锁",
+                                    subtitle = "验证本机指纹以开启",
+                                    negativeText = "取消",
+                                    onSuccess = { viewModel.setBiometricLock(true) },
+                                )
+                            }
+                        },
                         colors = SwitchDefaults.colors(
                             checkedTrackColor = AloCardTheme.colors.gold,
                         ),
@@ -153,7 +240,7 @@ fun SettingsScreen(
                 }
                 SettingsRow(
                     title = if (ui.hasPin) "修改安全密码" else "设置安全密码",
-                    hint = if (ui.hasPin) "用于解锁应用锁与查看完整卡号" else "设置后可用应用锁与卡号查看保护",
+                    hint = if (ui.hasPin) "用于解锁应用锁与查看完整卡号" else "设置后可用密码锁与卡号查看保护",
                     onClick = { if (ui.hasPin) onChangePin() else onSetupPin() },
                 )
             }
@@ -225,14 +312,19 @@ fun SettingsScreen(
         }
     }
 
-    // ---- 更新日志弹层 ----
+    // ---- 更新日志弹层（Markdown → 结构化渲染，不裸显源码） ----
     if (showChangelog) {
         AlertDialog(
             onDismissRequest = { showChangelog = false },
             title = { Text("更新日志") },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
-                    Text(changelogText ?: "加载中…", style = MaterialTheme.typography.bodyMedium)
+                    val text = changelogText
+                    if (text == null) {
+                        Text("加载中…", style = MaterialTheme.typography.bodyMedium)
+                    } else {
+                        ChangelogContent(text)
+                    }
                 }
             },
             confirmButton = {
@@ -351,6 +443,33 @@ fun SettingsScreen(
 }
 
 private enum class PinDialog { EXPORT, IMPORT }
+
+/** 更新日志的结构化渲染：## 版本 → 金色标题；- 条目 → 圆点行；#/引用/空行忽略 */
+@Composable
+private fun ChangelogContent(markdown: String) {
+    val colors = AloCardTheme.colors
+    Column {
+        markdown.lines().forEach { line ->
+            when {
+                line.startsWith("## ") -> Text(
+                    line.removePrefix("## "),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    color = colors.goldText,
+                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                )
+                line.startsWith("- ") -> Row(Modifier.padding(vertical = 3.dp)) {
+                    Text("·", color = colors.goldText, modifier = Modifier.padding(end = 8.dp))
+                    Text(
+                        line.removePrefix("- "),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun SettingsRow(title: String, hint: String, onClick: () -> Unit) {

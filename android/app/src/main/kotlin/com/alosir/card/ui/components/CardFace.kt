@@ -37,6 +37,17 @@ import com.alosir.card.ui.common.goldBrush
 import com.alosir.card.ui.theme.AloCardTheme
 import java.time.LocalDate
 
+/** 卡组织中文显示名（卡面/列表共用；union → 中国银联，不显示 UNION） */
+fun schemeLabelFor(scheme: String): String = when (scheme) {
+    "union" -> "中国银联"
+    "visa" -> "Visa"
+    "mastercard" -> "Mastercard"
+    "amex" -> "美国运通"
+    "jcb" -> "JCB"
+    "diners" -> "Diners Club"
+    else -> "未知"
+}
+
 /**
  * 曜石卡面 · v2「鎏金卡夹」签名组件。
  * 黑金渐变 + 香槟芯片 + 脱敏卡号；深浅主题下卡面一致。
@@ -63,20 +74,32 @@ fun CreditCardFace(
     ) {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    Text(
-                        bankName,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = c.onCard,
-                    )
-                    Text(
-                        orgText.uppercase(),
-                        fontSize = 9.sp,
-                        letterSpacing = 2.sp,
-                        color = c.onCardDim,
-                        modifier = Modifier.padding(top = 3.dp),
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // 银行小 logo（有素材时）；无素材直接文字，不占位
+                    BankLogos.drawableFor(bankName)?.let { res ->
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(res),
+                            contentDescription = null,
+                            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                            modifier = Modifier.size(26.dp).clip(RoundedCornerShape(7.dp)),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Column {
+                        Text(
+                            bankName,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = c.onCard,
+                        )
+                        Text(
+                            orgText.uppercase(),
+                            fontSize = 9.sp,
+                            letterSpacing = 2.sp,
+                            color = c.onCardDim,
+                            modifier = Modifier.padding(top = 3.dp),
+                        )
+                    }
                 }
                 Box(
                     Modifier
@@ -120,14 +143,16 @@ fun BankChip(color: Color, glyph: String, modifier: Modifier = Modifier) {
 }
 
 /**
- * 银行账簿行 · v2。
- * 一行 = 一个银行账单组（同银行多卡合并出账），不再有「账单组 + 逐卡账单」两段式。
+ * 银行账簿行 · v2.1。
+ * 一行 = 一个银行账单组（同银行多卡合并出账）。
+ * 状态徽标固定卡片右上角；还款信息单行「M/d 还款（N 天后）」；格带通栏。
  */
 @Composable
 fun BankLedgerRow(
     bankName: String,
     subLabel: String,
     gracePeriodDays: Int?,
+    dueDays: Int?,
     dueText: String,
     dueSubText: String,
     dueState: DueState,
@@ -141,40 +166,48 @@ fun BankLedgerRow(
     modifier: Modifier = Modifier,
 ) {
     val colors = AloCardTheme.colors
-    Row(
+    val dateOnly = dueSubText.removeSuffix(" 还款")
+    // 单行还款文案：日期 + 相对天数合并，不再两行重复
+    val dueLine = when {
+        dueState == DueState.OVERDUE -> "$dueText（$dateOnly 到期）"
+        billState == BillState.SETTLED -> "本期已结清"
+        dueDays == null -> "补充账期后可用"
+        dueDays == 0 -> "今天还款（$dateOnly）"
+        else -> "$dateOnly 还款（$dueDays 天后）"
+    }
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(colors.paperRaised)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .clickable(onClick = onClick),
     ) {
-        BankChip(color = tabColor, glyph = tabGlyph)
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
+        Column(Modifier.fillMaxWidth().padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    bankName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
-                )
-                Text(
-                    subLabel,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-                Spacer(Modifier.weight(1f))
+                BankLogo(bankName = bankName, glyph = tabGlyph, color = tabColor)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        bankName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        subLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                // 徽标位 = 卡片右上角（不再挤在行内偏左）
+                Spacer(Modifier.width(8.dp))
                 StatusChip(billState = billState, dueState = dueState)
             }
             Row(
-                Modifier.fillMaxWidth().padding(top = 8.dp),
+                Modifier.fillMaxWidth().padding(top = 6.dp),
                 verticalAlignment = Alignment.Bottom,
             ) {
                 if (gracePeriodDays != null) {
@@ -198,34 +231,26 @@ fun BankLedgerRow(
                     )
                 }
                 Spacer(Modifier.weight(1f))
-                Column(horizontalAlignment = Alignment.End) {
-                    val dueColor = when (dueState) {
+                Text(
+                    dueLine,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = if (dueState == DueState.NORMAL) FontWeight.Normal else FontWeight.Medium,
+                    color = when (dueState) {
                         DueState.OVERDUE -> colors.overdue
                         DueState.DUE -> colors.due
                         DueState.NORMAL -> MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                    Text(
-                        dueText,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = if (dueState == DueState.NORMAL) FontWeight.Normal else FontWeight.Medium,
-                        color = dueColor,
-                    )
-                    Text(
-                        dueSubText,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    if (gracePeriodDays != null) {
-                        CountdownStrip(
-                            billDate = billDate,
-                            dueDate = dueDate,
-                            today = today,
-                            isDueToday = dueState == DueState.DUE,
-                            overdue = dueState == DueState.OVERDUE,
-                            modifier = Modifier.width(120.dp).padding(top = 5.dp),
-                        )
-                    }
-                }
+                    },
+                )
+            }
+            if (gracePeriodDays != null) {
+                CountdownStrip(
+                    billDate = billDate,
+                    dueDate = dueDate,
+                    today = today,
+                    isDueToday = dueState == DueState.DUE,
+                    overdue = dueState == DueState.OVERDUE,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                )
             }
         }
     }

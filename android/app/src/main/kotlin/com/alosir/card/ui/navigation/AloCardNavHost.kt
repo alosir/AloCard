@@ -106,6 +106,7 @@ fun AloCardNavHost(
                     onBack = { navController.popBackStack() },
                     onSetupPin = { navController.navigate(Routes.PIN_SETUP) },
                     onChangePin = { navController.navigate(Routes.PIN_CHANGE) },
+                    onVerifyPin = { navController.navigate(Routes.PIN_VERIFY) },
                 )
             }
             composable(Routes.PIN_SETUP) {

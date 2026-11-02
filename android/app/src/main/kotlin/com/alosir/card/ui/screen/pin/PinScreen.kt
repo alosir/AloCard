@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,10 +65,12 @@ fun PinScreen(
         Column(
             Modifier
                 .fillMaxSize()
+                .navigationBarsPadding()
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(32.dp))
+            // 拨号盘式：输入区垂直居中，键盘沉底（项 9）
+            Spacer(Modifier.weight(1f))
             Text(
                 text = if (ui.verifying) "验证中…" else ui.hint,
                 style = MaterialTheme.typography.bodyLarge,
@@ -89,8 +92,9 @@ fun PinScreen(
                 } ?: MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.weight(1f))
             PinKeypad(onKey = viewModel::onKey)
+            Spacer(Modifier.height(8.dp))
         }
     }
 }

@@ -27,6 +27,13 @@ class SettingsRepositoryImpl @Inject constructor(
         dao.put(AppSettingsEntity(KEY_LOCK_ENABLED, enabled.toString()))
     }
 
+    override fun observeBiometricEnabled(): Flow<Boolean> =
+        dao.observe(KEY_BIOMETRIC_ENABLED).map { it == "true" }
+
+    override suspend fun setBiometricEnabled(enabled: Boolean) {
+        dao.put(AppSettingsEntity(KEY_BIOMETRIC_ENABLED, enabled.toString()))
+    }
+
     override suspend fun binTableSnapshot(): String? = dao.get(KEY_BIN_SNAPSHOT)
 
     override suspend fun setBinTableSnapshot(snapshot: String) {
@@ -46,6 +53,7 @@ class SettingsRepositoryImpl @Inject constructor(
 
         private const val KEY_SORT_MODE = "sort_mode"
         private const val KEY_LOCK_ENABLED = "lock_enabled"
+        private const val KEY_BIOMETRIC_ENABLED = "biometric_enabled"
         private const val KEY_BIN_SNAPSHOT = "bin_table_snapshot"
         private const val KEY_LAST_BACKUP_AT = "last_backup_at"
     }

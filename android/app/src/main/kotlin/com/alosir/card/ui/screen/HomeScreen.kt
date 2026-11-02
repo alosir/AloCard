@@ -62,6 +62,7 @@ import com.alosir.card.ui.components.EmptyState
 import com.alosir.card.ui.components.NoticeBanner
 import com.alosir.card.ui.components.SortSegment
 import com.alosir.card.ui.components.TodoBanner
+import com.alosir.card.ui.components.schemeLabelFor
 import com.alosir.card.ui.theme.AloCardTheme
 import com.alosir.card.ui.theme.tabColorFor
 
@@ -171,7 +172,7 @@ fun HomeScreen(
                             val (g, c) = carousel[page]
                             CreditCardFace(
                                 bankName = g.bankName,
-                                orgText = c.scheme,
+                                orgText = schemeLabelFor(c.scheme),
                                 tail = c.tail,
                                 graceDays = g.gracePeriodDays,
                                 dueText = g.dueSubText.removeSuffix(" 还款"),
@@ -219,7 +220,7 @@ fun HomeScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                     Text(
-                                        text = g.billAmountCents?.let { "¥ ${Money.format(it - g.paidAmountCents)}" } ?: "待录入",
+                                        text = g.billAmountCents?.let { Money.format(it - g.paidAmountCents) } ?: "待录入",
                                         fontSize = 24.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = colors.goldText,
@@ -277,6 +278,7 @@ fun HomeScreen(
                             subLabel = if (group.cards.size > 1) "${group.cards.size} 张卡合并出账"
                             else "尾号 ${group.cards.firstOrNull()?.tail ?: "????"}",
                             gracePeriodDays = group.gracePeriodDays,
+                            dueDays = group.dueDays,
                             dueText = group.dueText,
                             dueSubText = group.dueSubText,
                             dueState = group.dueState,

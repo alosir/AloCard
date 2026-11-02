@@ -62,6 +62,45 @@ class SettingsViewModel @Inject constructor(
     val lockEnabled: StateFlow<Boolean> = settings.observeLockEnabled()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    /** 指纹锁开关状态（与密码锁并列） */
+    val biometricEnabled: StateFlow<Boolean> = settings.observeBiometricEnabled()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    /** 锁开关的流程挂起态：从 PIN 设置/验证页返回后据此完成开关动作 */
+    enum class PendingLockAction { ENABLE_PIN, DISABLE_PIN, ENABLE_BIOMETRIC }
+    private val _pendingLockAction = MutableStateFlow<PendingLockAction?>(null)
+    val pendingLockAction: StateFlow<PendingLockAction?> = _pendingLockAction.asStateFlow()
+
+    fun markPendingLockAction(action: PendingLockAction?) = _pendingLockAction.update { action }
+
+    /** 实时状态查询（界面流程用，不走缓存 state） */
+    fun hasPinNow(): Boolean = security.hasPin()
+    fun isSessionUnlockedNow(): Boolean = security.isSessionUnlocked()
+
+    /** 密码锁开启成功（设置密码流程完成返回） */
+    fun enablePasswordLock() {
+        viewModelScope.launch { settings.setLockEnabled(true) }
+        _pendingLockAction.value = null
+        _ui.update { it.copy(hasPin = true) }
+    }
+
+    /** 密码锁关闭成功（验证通过）：关闭并清空密码；同时关闭指纹锁（兜底已不存在） */
+    fun disablePasswordLockAndClear() {
+        security.clearPin()
+        viewModelScope.launch {
+            settings.setLockEnabled(false)
+            settings.setBiometricEnabled(false)
+        }
+        _pendingLockAction.value = null
+        _ui.update { it.copy(hasPin = false) }
+    }
+
+    /** 指纹锁开关（验证通过后调用） */
+    fun setBiometricLock(enabled: Boolean) {
+        viewModelScope.launch { settings.setBiometricEnabled(enabled) }
+        _pendingLockAction.value = null
+    }
+
     val lastBackupAt: StateFlow<Long?> = settings.observeLastBackupAt()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 

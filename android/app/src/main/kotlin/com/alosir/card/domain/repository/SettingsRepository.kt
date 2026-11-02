@@ -17,6 +17,10 @@ interface SettingsRepository {
     fun observeLockEnabled(): Flow<Boolean>
     suspend fun setLockEnabled(enabled: Boolean)
 
+    /** 指纹锁开关：与密码锁并列；开启需先通过本机指纹验证 */
+    fun observeBiometricEnabled(): Flow<Boolean>
+    suspend fun setBiometricEnabled(enabled: Boolean)
+
     /** 号段表快照时间（ISO 日期串），用于「识别结果仅供参考」的诚实标注 */
     suspend fun binTableSnapshot(): String?
     suspend fun setBinTableSnapshot(snapshot: String)

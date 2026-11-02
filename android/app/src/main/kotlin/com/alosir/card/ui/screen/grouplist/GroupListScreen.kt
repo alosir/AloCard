@@ -95,6 +95,7 @@ fun GroupListScreen(
                             bankName = row.bankName,
                             subLabel = if (row.cardCount > 1) "${row.cardCount} 张卡合并出账" else "尾号 ${row.firstTail}",
                             gracePeriodDays = row.gracePeriodDays,
+                            dueDays = row.dueDays,
                             dueText = row.dueText,
                             dueSubText = row.dueSubText,
                             dueState = row.dueState,

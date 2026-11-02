@@ -43,6 +43,7 @@ import com.alosir.card.ui.common.PageScaffold
 import com.alosir.card.ui.common.FilledButton
 import com.alosir.card.ui.common.TonalButton
 import com.alosir.card.ui.components.BankChip
+import com.alosir.card.ui.components.BankLogo
 import com.alosir.card.ui.components.BillState
 import com.alosir.card.ui.components.DueState
 import com.alosir.card.ui.components.StatusChip
@@ -129,14 +130,14 @@ fun GroupDetailScreen(
                     Column {
                         Text("本期应还（剩余）", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
-                            bill?.outstandingCents?.let { "¥ ${Money.format(it)}" } ?: "待录入",
+                            bill?.outstandingCents?.let { Money.format(it) } ?: "待录入",
                             fontSize = 26.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = colors.goldText,
                             modifier = Modifier.padding(top = 2.dp),
                         )
                         Text(
-                            "账单 ${bill?.billAmountCents?.let { "¥ ${Money.format(it)}" } ?: "—"} · 已还 ¥ ${Money.format(bill?.paidAmountCents ?: 0L)}",
+                            "账单 ${bill?.billAmountCents?.let { Money.format(it) } ?: "—"} · 已还 ${Money.format(bill?.paidAmountCents ?: 0L)}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 2.dp),
@@ -199,7 +200,11 @@ fun GroupDetailScreen(
                             .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        BankChip(color = tabColorFor(group.bankName), glyph = (group.bankName ?: group.name).first().toString())
+                        BankLogo(
+                            bankName = group.bankName ?: group.name,
+                            glyph = (group.bankName ?: group.name).first().toString(),
+                            color = tabColorFor(group.bankName),
+                        )
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(

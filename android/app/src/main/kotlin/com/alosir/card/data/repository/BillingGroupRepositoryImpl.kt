@@ -99,7 +99,16 @@ class BillingGroupRepositoryImpl @Inject constructor(
         groupDao.findSharedGroup(bankName, billingDay)?.toDomain()
 
     override fun observeTotals(): Flow<CreditTotals> =
-        combine(quotaDao.observeTotalLimitCents(), quotaDao.observeTotalUsedCents()) { limit, used ->
+        // 银行维度聚合：同银行多组共享授信，额度取最高、不叠加；
+        // 已用 = 各组（账单金额 − 已还款）的真实欠款合计；无银行名的组按组独立兜底
+        observeGroupQuotas().map { quotas ->
+            val byBank = quotas.groupBy {
+                it.bankName?.trim()?.takeIf { b -> b.isNotEmpty() } ?: "group:${it.groupId}"
+            }
+            val limit = byBank.values.sumOf { rows ->
+                rows.mapNotNull { r -> r.creditLimitCents }.maxOrNull() ?: 0L
+            }
+            val used = quotas.sumOf { it.usedCents }
             CreditTotals(totalLimitCents = limit, usedCents = used)
         }
 

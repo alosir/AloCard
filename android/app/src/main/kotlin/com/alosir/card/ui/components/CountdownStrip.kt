@@ -21,6 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.alosir.card.domain.CountdownCell
+import com.alosir.card.domain.countdownCells
 import com.alosir.card.ui.theme.AloCardTheme
 import java.time.LocalDate
 
@@ -54,54 +56,30 @@ fun CountdownStrip(
     modifier: Modifier = Modifier,
 ) {
     val colors = AloCardTheme.colors
-    val span = java.time.temporal.ChronoUnit.DAYS.between(billDate, dueDate).toInt()
-    if (span <= 0) return
+    // 一格一天，含还款日当天（span+1 格），算法与测试见 domain/CountdownCells.kt
+    val cells = countdownCells(billDate, dueDate, today)
+    if (cells.isEmpty()) return
 
     // drawBehind 内不能调用 @Composable 取值，提前取出
     val futureCell = MaterialTheme.colorScheme.outline
-    val todayIdx = java.time.temporal.ChronoUnit.DAYS.between(billDate, today).toInt()
-
-    // 逾期时：整条填实，末格为逾期标记
-    if (overdue && todayIdx >= span) {
-        Row(
-            modifier = modifier,
-            horizontalArrangement = Arrangement.spacedBy(CellGap),
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            repeat(span) { i ->
-                val isLast = i == span - 1
-                Box(
-                    Modifier
-                        .width(CellWidth)
-                        .height(if (isLast) CellHeightTall else CellHeightNormal)
-                        .background(if (isLast) colors.overdue else colors.countdownPast)
-                )
-            }
-        }
-        return
-    }
-
-    val idx = todayIdx.coerceIn(0, span - 1)
 
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(CellGap),
         verticalAlignment = Alignment.Bottom,
     ) {
-        repeat(span) { i ->
-            val isToday = i == idx
-            val isDue = i == span - 1
-            val height = if (isToday || isDue) CellHeightTall else CellHeightNormal
-            val color = when {
-                isToday -> MaterialTheme.colorScheme.onSurface
-                isDue -> if (isDueToday) colors.due else colors.overdue
-                i < idx -> colors.countdownPast
-                else -> Color.Transparent
+        cells.forEach { cell ->
+            val tall = cell == CountdownCell.TODAY || cell == CountdownCell.DUE
+            val color = when (cell) {
+                CountdownCell.TODAY -> MaterialTheme.colorScheme.onSurface
+                CountdownCell.DUE -> if (isDueToday) colors.due else colors.overdue
+                CountdownCell.PAST -> colors.countdownPast
+                CountdownCell.FUTURE -> Color.Transparent
             }
             Box(
                 Modifier
                     .width(CellWidth)
-                    .height(height)
+                    .height(if (tall) CellHeightTall else CellHeightNormal)
                     .then(
                         if (color == Color.Transparent) {
                             // 未来格：1dp 内描边，不用 fill

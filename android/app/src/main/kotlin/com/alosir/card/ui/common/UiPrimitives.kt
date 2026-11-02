@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -28,6 +30,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.focus.onFocusChanged
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -95,7 +100,7 @@ fun PageScaffold(
             }
             actions()
         }
-        Box(Modifier.weight(1f).fillMaxWidth()) { content() }
+        Box(Modifier.weight(1f).fillMaxWidth().imePadding()) { content() }
         bottomBar()
     }
 }
@@ -159,7 +164,8 @@ fun Section(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     }
 }
 
-/** 填充式输入框（圆角 12dp，聚焦金色描边） */
+/** 填充式输入框（圆角 12dp，聚焦金色描边；获焦自动滚到键盘上方） */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun FilledField(
     value: String,
@@ -173,6 +179,8 @@ fun FilledField(
     textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
 ) {
     val colors = AloCardTheme.colors
+    val bringIntoView = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
+    val focusScope = rememberCoroutineScope()
     Column(modifier) {
         Text(
             text = label,
@@ -183,7 +191,18 @@ fun FilledField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .bringIntoViewRequester(bringIntoView)
+                .onFocusChanged { state ->
+                    // 获焦时把字段顶到键盘上方，避免被 IME 盖住（表单末尾字段尤其明显）
+                    if (state.isFocused) {
+                        focusScope.launch {
+                            kotlinx.coroutines.delay(280) // 等键盘展开
+                            bringIntoView.bringIntoView()
+                        }
+                    }
+                },
             placeholder = { Text(placeholder, style = textStyle) },
             isError = isError,
             singleLine = true,

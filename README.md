@@ -53,4 +53,7 @@ node android/run-jvm-tests.js test      # Kotlin 域层 35 用例，与 JS 版�
 
 ## 许可证
 
-源码以 MIT 协议开源（号段数据来自 [bcbc](https://github.com/)。详细许可见 `engine/bin-table.json` 的 meta 与 `bin-data/`）。
+源码以 MIT 协议开源。
+
+- 号段数据：bcbc 中国银行卡 BIN 数据集（MIT，快照与许可见 `engine/bin-table.json` 的 meta）
+- 银行 logo：[cellier/bank-icon-cn](https://github.com/cellier/bank-icon-cn)（Ping++ 开源银行图标库，18 家主流银行；商标归各银行所有，仅作发卡行标识展示）

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +30,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alosir.card.domain.CardNumberIdentifier
 import com.alosir.card.domain.util.Money
 import com.alosir.card.ui.common.FilledField
+import com.alosir.card.ui.common.ExpiryField
+import com.alosir.card.ui.common.BillingDayPicker
 import com.alosir.card.ui.common.FilledButton
 import com.alosir.card.ui.common.HintText
 import com.alosir.card.ui.common.PageScaffold
@@ -146,16 +149,31 @@ fun AddCardScreen(
                     placeholder = "选填，如「经典白」",
                 )
                 Spacer(Modifier.height(12.dp))
-                FilledField(
+                ExpiryField(
                     value = ui.expiryYm,
                     onValueChange = viewModel::onExpiryChange,
                     label = "有效期",
-                    placeholder = "YYYY-MM",
-                    numeric = true,
-                    isError = ui.expiryError != null,
-                    supportingText = ui.expiryError ?: "到期前 30 天会提醒换卡。",
                 )
                 Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "常用银行（点选，或下方手输）",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+                ) {
+                    listOf("招商银行", "工商银行", "建设银行", "农业银行", "中国银行", "交通银行", "中信银行", "兴业银行").forEach { bank ->
+                        ChoiceChip(
+                            selected = ui.bankName == bank,
+                            text = bank,
+                            onClick = { viewModel.onBankNameChange(bank) },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
                 FilledField(
                     value = ui.bankName,
                     onValueChange = viewModel::onBankNameChange,
@@ -171,21 +189,15 @@ fun AddCardScreen(
             if (!ui.isEditing && ui.choice != GroupChoice.JOIN) {
                 Section {
                     SectionTitle("账期与额度")
-                    FilledField(
-                        value = ui.groupName,
-                        onValueChange = viewModel::onGroupNameChange,
-                        label = "账单组名称",
-                        placeholder = "默认取银行名",
+                    Text(
+                        text = "账单日（点选，每月固定）",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(Modifier.height(12.dp))
-                    FilledField(
-                        value = ui.billingDayText,
-                        onValueChange = viewModel::onBillingDayChange,
-                        label = "账单日",
-                        placeholder = "1–28",
-                        numeric = true,
-                        isError = ui.billingDayError != null,
-                        supportingText = ui.billingDayError ?: "银行实际账单日只在 1–28 号之间（ADR-0002）",
+                    Spacer(Modifier.height(8.dp))
+                    BillingDayPicker(
+                        selected = ui.billingDayText.trim().toIntOrNull(),
+                        onSelect = { viewModel.onBillingDayChange(it.toString()) },
                     )
                     Spacer(Modifier.height(12.dp))
 

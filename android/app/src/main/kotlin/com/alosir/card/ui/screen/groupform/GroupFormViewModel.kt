@@ -118,7 +118,9 @@ class GroupFormViewModel @Inject constructor(
                 // 账单日填了而 N 缺省 → 20（PRD 4.2 默认值）；账单日空则整体待完善
                 dueOffsetDays = if (day != null) state.dueOffsetDays else null,
                 creditLimitCents = Money.parseToCents(state.creditLimitText),
-                bankName = null, // 银行名由组内卡片识别填充，表单不直接维护
+                // 银行是标准维度：表单里的「银行」字段同时作为组名与 bankName，
+                // 不再允许与银行无关的自由组名，也不再在编辑时清空 bankName
+                bankName = state.name.trim().ifEmpty { null },
             )
             if (state.isEditing) {
                 groupRepository.updateGroup(group)

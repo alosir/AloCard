@@ -52,26 +52,23 @@ fun GroupFormScreen(
                 .padding(top = 8.dp),
         ) {
             Section {
-                SectionTitle("基本信息")
+                SectionTitle("银行")
                 FilledField(
                     value = ui.name,
                     onValueChange = viewModel::onNameChange,
-                    label = "账单组名称",
+                    label = "银行（标准维度）",
                     placeholder = "如「招商银行」",
                     isError = ui.nameError != null,
-                    supportingText = ui.nameError,
+                    supportingText = ui.nameError ?: "同银行多卡共享额度（取最高，不叠加）；合并出账的卡共用账期。",
                 )
             }
             Section {
                 SectionTitle("账期")
-                FilledField(
-                    value = ui.billingDayText,
-                    onValueChange = viewModel::onBillingDayChange,
-                    label = "账单日",
-                    placeholder = "1–28",
-                    numeric = true,
-                    isError = ui.billingDayError != null,
-                    supportingText = ui.billingDayError ?: "银行实际账单日只在 1–28 号之间（ADR-0002）",
+                Text_stepper_label("账单日（点选，每月固定）")
+                Spacer(Modifier.height(8.dp))
+                com.alosir.card.ui.common.BillingDayPicker(
+                    selected = ui.billingDayText.trim().toIntOrNull(),
+                    onSelect = { viewModel.onBillingDayChange(it.toString()) },
                 )
                 Spacer(Modifier.height(12.dp))
                 Text_stepper_label("最后还款日（推后 N 天）")

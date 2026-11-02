@@ -2,7 +2,7 @@ package com.alosir.card
 
 import android.os.Bundle
 import android.os.SystemClock
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.collectAsState
@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     @Inject
     lateinit var refresher: DailySurfacesRefresher
@@ -50,10 +50,12 @@ class MainActivity : ComponentActivity() {
                 val startGroupId = intent.getLongExtra(EXTRA_GROUP_ID, -1L)
                 val lockEnabled by remember { settings.observeLockEnabled() }
                     .collectAsState(initial = false)
+                val biometricEnabled by remember { settings.observeBiometricEnabled() }
+                    .collectAsState(initial = false)
 
-                // 应用锁（PRD F10）：开启时，未解锁会话一律先过闸门
-                if (lockEnabled) {
-                    AppLockGate(security = security) {
+                // 密码锁或指纹锁任一开启：未解锁会话一律先过闸门（指纹优先，PIN 兜底）
+                if (lockEnabled || biometricEnabled) {
+                    AppLockGate(security = security, biometricEnabled = biometricEnabled) {
                         AloCardNavHost(launchGroupId = startGroupId)
                     }
                 } else {
