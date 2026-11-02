@@ -10,11 +10,11 @@ import java.util.Properties
 import java.io.File
 
 android {
-    namespace = "com.alocard.app"
+    namespace = "com.alosir.card"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.alocard.app"
+        applicationId = "com.alosir.card"
         minSdk = 26
         targetSdk = 35
         versionCode = (project.findProperty("alocard.versionCode") as String).toInt()
