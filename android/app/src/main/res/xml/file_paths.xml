@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- 更新 APK 下载目录（应用专属外部目录，用户可见、无需存储权限） -->
+    <external-files-path name="updates" path="Download/" />
+    <cache-path name="cache" path="." />
+</paths>

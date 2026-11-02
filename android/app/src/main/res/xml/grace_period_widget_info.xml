@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  今日免息期小组件（ADR-0012）。
+  targetCellWidth/Height 用 4x2：5 行列表在常见小组件尺寸里排得下。
+  updatePeriodMillis 设为 0——刷新由 App 主动触发（每日 0 点 + 每次打开），
+  不依赖系统的 30 分钟最小轮询间隔。
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:description="@string/widget_desc"
+    android:initialLayout="@layout/widget_grace_period"
+    android:previewLayout="@layout/widget_grace_period"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

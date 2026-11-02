@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  启动图标前景：点阵纸面 + washi 索引标签（DESIGN.md 第 1 节视觉世界）。
+  标签自左侧伸出、底部折角，取色板第一个颜色 indigo #3C5A80。
+  108dp 画布，内容保持在中央 72dp 安全区内（标签左侧允许被遮罩裁切）。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 点阵网格：16dp 间距，ink 7.5%（DESIGN.md 2.1 的 dot 令牌） -->
+    <group android:fillColor="#131C1B19">
+        <path android:pathData="M27.8,26a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+        <path android:pathData="M43.8,26a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+        <path android:pathData="M59.8,26a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+        <path android:pathData="M75.8,26a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+        <path android:pathData="M27.8,42a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+        <path android:pathData="M43.8,42a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+        <path android:pathData="M59.8,42a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+        <path android:pathData="M75.8,42a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+        <path android:pathData="M27.8,58a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+        <path android:pathData="M43.8,58a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+        <path android:pathData="M59.8,58a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+        <path android:pathData="M75.8,58a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+        <path android:pathData="M27.8,74a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+        <path android:pathData="M43.8,74a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+        <path android:pathData="M59.8,74a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+        <path android:pathData="M75.8,74a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0" />
+    </group>
+
+    <!-- washi 索引标签：左伸硬边块，indigo；底部折角 -->
+    <path
+        android:pathData="M32,34 h22 v25 l-7,7 h-15 z"
+        android:fillColor="#3C5A80" />
+    <!-- 折角阴影（DESIGN.md 2.3：rgba(0,0,0,.26)） -->
+    <path
+        android:pathData="M47,66 l7,-7 v7 z"
+        android:fillColor="#42000000" />
+    <!-- 标签上的账簿行：两条白色纸纹暗示 list -->
+    <path
+        android:pathData="M36,44 h12"
+        android:strokeColor="#F5F5F5"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="square" />
+    <path
+        android:pathData="M36,51 h12"
+        android:strokeColor="#F5F5F5"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="square" />
+</vector>

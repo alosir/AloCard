@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 小组件单行：排名 + 银行名 + 等宽天数 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingTop="5dp"
+    android:paddingBottom="1dp">
+
+    <TextView
+        android:id="@+id/row_rank"
+        android:layout_width="14dp"
+        android:layout_height="wrap_content"
+        android:textSize="11sp"
+        android:gravity="center" />
+
+    <TextView
+        android:id="@+id/row_bank"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/row_days"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+</LinearLayout>

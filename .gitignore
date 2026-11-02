@@ -1,0 +1,35 @@
+# ---- AloCard 仓库边界（开源准备）----
+# 产品设计与技术实施文档留在本地，不进仓库
+PRODUCT.md
+DESIGN.md
+CONTEXT.md
+docs/
+.impeccable/
+.workbuddy/
+
+# ---- Android 构建 ----
+android/local.properties
+android/.gradle/
+android/build/
+android/app/build/
+android/captures/
+*.iml
+.idea/
+.cxx/
+
+# ---- 发布签名（keystore 与密码配置绝不入库）----
+android/keystore/
+android/keystore.properties
+*.jks
+*.keystore
+
+# ---- 发布产物 ----
+releases/
+*.apk
+*.aab
+
+# ---- 系统杂物 ----
+Thumbs.db
+.DS_Store
+desktop.ini
+prototype/app-(1).css

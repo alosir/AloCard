@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 通知：还款提醒、账单录入引导与免息期 TOP 常驻通知（ADR-0011/0012） -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--
+      更新通道（唯一的网络用途）：检查 GitHub 最新 Release 并下载 APK。
+      不连接银行、没有账号体系、无云同步——产品核心「数据不出网」不变，
+      此权限仅服务应用自我更新（用户指令，2026-11-02，优先于 ADR-0013 的字面条文）。
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!--
+      说明（技术规范 §1.7/§1.8）：
+      - 不用 SCHEDULE_EXACT_ALARM——所有提醒都是日粒度，WorkManager 足够，
+        精确闹钟在 Android 12+ 需用户手动特批，且 USE_EXACT_ALARM 受 Play 政策限制；
+      - 不用 FOREGROUND_SERVICE——常驻通知用 setOngoing(true) 的普通通知即可；
+      - 不声明 RECEIVE_BOOT_COMPLETED——WorkManager 自带重启恢复。
+      - 不声明 INTERNNET（C1：纯本地，无账号无网络无云同步）。
+    -->
+
+    <application
+        android:name=".AloCardApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AloCard">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.AloCard">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 桌面小组件：今日免息期 TOP5（ADR-0012） -->
+        <receiver
+            android:name=".widget.GracePeriodWidgetReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/grace_period_widget_info" />
+        </receiver>
+
+        <!-- 更新 APK 的共享（下载完成后交给系统安装器） -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+    </application>
+
+</manifest>

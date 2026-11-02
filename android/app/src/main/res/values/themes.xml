@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      主题说明：
+      Compose 的 MaterialTheme 才是视觉权威来源（ui/theme/）。
+      这里的 XML 主题只为启动窗口提供背景，避免冷启动白屏闪烁。
+      因此只设 windowBackground 与必要的状态栏配置，颜色值与 DESIGN.md 第 2.1 节一致。
+    -->
+    <style name="Theme.AloCard" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/paper</item>
+        <item name="android:statusBarColor">@color/paper</item>
+        <item name="android:navigationBarColor">@color/paper</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>

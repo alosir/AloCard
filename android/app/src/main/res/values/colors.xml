@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 启动窗口背景色，与 DESIGN.md 2.1 一致 -->
+    <color name="paper">#F4F5F5</color>
+    <color name="paper_dark">#16181C</color>
+</resources>

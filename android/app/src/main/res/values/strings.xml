@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AloCard</string>
+
+    <!-- 通知渠道 -->
+    <string name="channel_repayment_name">还款提醒</string>
+    <string name="channel_repayment_desc">在最后还款日临近时提醒还款</string>
+    <string name="channel_bill_entry_name">账单录入</string>
+    <string name="channel_bill_entry_desc">账单出账后引导录入账单金额</string>
+    <string name="channel_persistent_name">今日免息期</string>
+    <string name="channel_persistent_desc">常驻通知，展示当天免息期最长的卡片</string>
+
+    <!-- 桌面小组件 -->
+    <string name="widget_title">今日免息期</string>
+    <string name="widget_desc">展示当天免息期最长的 5 个账单组</string>
+
+    <!-- 空状态 -->
+    <string name="empty_title">还没有卡片</string>
+    <string name="empty_desc">加一张信用卡，AloCard 会算出它距离下次出账还有几天、免息期有多少天。</string>
+    <string name="widget_empty_hint">打开 AloCard 添加卡片</string>
+    <string name="notif_permission_missing">未开启通知权限，将无法收到还款提醒</string>
+    <string name="notif_permission_go">去设置</string>
+</resources>
