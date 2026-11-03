@@ -131,8 +131,36 @@ class UpdateManager @Inject constructor(
         } finally {
             conn.disconnect()
         }
+        lastDownloadedApk = apk
         notifyInstallReady(apk)
         apk
+    }
+
+    /** 最近一次下载完成的 APK（供「立即安装」手动触发） */
+    var lastDownloadedApk: File? = null
+        private set
+
+    /** 把 APK 交给系统安装器（应用内「立即安装」与通知点击共用） */
+    fun installApk(apk: File) {
+        val uri: Uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            apk,
+        )
+        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(installIntent)
+    }
+
+    /** 手动安装最近下载的更新包；无包时返回 false */
+    fun installDownloaded(): Boolean {
+        val apk = lastDownloadedApk ?: return false
+        if (!apk.exists()) return false
+        installApk(apk)
+        return true
     }
 
     /** 下载完成通知：点击走系统安装器（需 REQUEST_INSTALL_PACKAGES） */

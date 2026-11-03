@@ -56,6 +56,10 @@ class SettingsViewModel @Inject constructor(
     private val _downloadProgress = MutableStateFlow(-2f)
     val downloadProgress: StateFlow<Float> = _downloadProgress.asStateFlow()
 
+    /** 更新包已下载完成（弹窗切换为「下载完成 / 立即安装」） */
+    private val _downloadCompleted = MutableStateFlow(false)
+    val downloadCompleted: StateFlow<Boolean> = _downloadCompleted.asStateFlow()
+
     private val _changelog = MutableStateFlow<String?>(null)
     val changelog: StateFlow<String?> = _changelog.asStateFlow()
 
@@ -136,20 +140,30 @@ class SettingsViewModel @Inject constructor(
 
     fun dismissUpdateResult() {
         _updateCheck.value = null
+        _downloadCompleted.value = false
     }
 
-    /** 下载并触发安装 */
+    /** 下载并触发安装：完成后弹窗转为「下载完成 · 立即安装」，并尝试自动打开安装器 */
     fun downloadAndInstall(release: LatestRelease) {
         viewModelScope.launch {
             _downloadProgress.value = 0f
+            _downloadCompleted.value = false
             runCatching {
                 updateManager.downloadAndInstall(release.downloadUrl) { p -> _downloadProgress.value = p }
-                _ui.update { it.copy(message = "下载完成，点击通知或在下载目录安装") }
+                _downloadCompleted.value = true
+                _ui.update { it.copy(message = "下载完成，可立即安装") }
+                // 尝试自动打开系统安装器；失败（如未授权安装）则留在弹窗由用户手动点「立即安装」
+                runCatching { updateManager.installDownloaded() }
             }.onFailure { e ->
                 _ui.update { it.copy(error = "下载失败：${e.message}") }
             }
             _downloadProgress.value = -2f
         }
+    }
+
+    /** 弹窗「立即安装」：手动打开已下载的 APK */
+    fun installDownloaded() {
+        runCatching { updateManager.installDownloaded() }
     }
 
     /** 读取随包 CHANGELOG.md（构建时从仓库根拷贝，AGENTS.md 约定的单一事实来源） */

@@ -69,6 +69,7 @@ fun SettingsScreen(
     val lastBackupAt by viewModel.lastBackupAt.collectAsStateWithLifecycle()
     val updateCheck by viewModel.updateCheck.collectAsStateWithLifecycle()
     val downloadProgress by viewModel.downloadProgress.collectAsStateWithLifecycle()
+    val downloadCompleted by viewModel.downloadCompleted.collectAsStateWithLifecycle()
     val changelogText by viewModel.changelog.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = context as? android.app.Activity
@@ -333,7 +334,7 @@ fun SettingsScreen(
         )
     }
 
-    // ---- 新版本弹层：Release 说明 + 下载 ----
+    // ---- 新版本弹层：新版本更新日志 + 下载/立即安装状态机 ----
     val check = updateCheck
     if (check is UpdateCheckResult.Available) {
         val release = check.release
@@ -342,14 +343,16 @@ fun SettingsScreen(
             title = { Text("发现新版本 ${release.tagName}") },
             text = {
                 Column {
+                    // 显示该版本的真实更新日志（Release body），而非占位文案
                     if (release.body.isNotBlank()) {
                         Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = 280.dp)) {
-                            Text(release.body, style = MaterialTheme.typography.bodyMedium)
+                            ChangelogContent(release.body)
                         }
                         Spacer(Modifier.height(12.dp))
                     }
                     when {
-                        downloadProgress == -2f -> HintText("点击「下载更新」获取 APK，完成后系统安装器会引导安装。")
+                        downloadCompleted -> HintText("下载完成，可点击「立即安装」更新到 ${release.tagName}。")
+                        downloadProgress == -2f -> HintText("点击「下载更新」获取 APK，完成后可立即安装。")
                         downloadProgress < 0f -> HintText("下载中…（进度未知）")
                         else -> {
                             HintText("下载中 ${(downloadProgress * 100).toInt()}%")
@@ -364,9 +367,12 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(
-                    enabled = downloadProgress == -2f,
-                    onClick = { viewModel.downloadAndInstall(release) },
-                ) { Text("下载更新") }
+                    enabled = downloadCompleted || downloadProgress == -2f,
+                    onClick = {
+                        if (downloadCompleted) viewModel.installDownloaded()
+                        else viewModel.downloadAndInstall(release)
+                    },
+                ) { Text(if (downloadCompleted) "立即安装" else "下载更新") }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissUpdateResult() }) { Text("稍后") }

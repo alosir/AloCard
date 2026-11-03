@@ -21,6 +21,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -103,9 +106,14 @@ fun HomeScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
+        // 底部 inset 由外层 NavHost 的 Scaffold（底部导航）统一承担，
+        // 本页不再重复计算，否则导航栏上方会多出一条空白带
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets.systemBars.only(
+            androidx.compose.foundation.layout.WindowInsetsSides.Top + androidx.compose.foundation.layout.WindowInsetsSides.Horizontal,
+        ),
         topBar = {
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 10.dp, bottom = 12.dp),
+                Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 20.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.Bottom) {

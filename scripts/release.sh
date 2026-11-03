@@ -44,8 +44,17 @@ echo "→ 已推送标签 ${TAG}"
 # 5. GitHub Release（需要 token；公开仓库的读取不需要，创建需要）
 if [ -n "${GITHUB_TOKEN:-}" ]; then
   echo "→ 创建 GitHub Release…"
+  # Release 说明 = CHANGELOG 中当前版本的段落（应用内更新弹窗直接展示该文案）
+  RELEASE_BODY=$(awk -v tag="## ${TAG}" '
+    index($0, tag) == 1 { p=1; next }
+    p && /^## / { p=0 }
+    p { print }
+  ' CHANGELOG.md)
+  PAYLOAD=$(TAG="$TAG" RELEASE_BODY="$RELEASE_BODY" python -c \
+    "import json,os;print(json.dumps({'tag_name':os.environ['TAG'],'name':'AloCard '+os.environ['TAG'],'body':os.environ['RELEASE_BODY'].strip()}))")
   RELEASE_ID=$(curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
-    -d "{\"tag_name\":\"${TAG}\",\"name\":\"AloCard ${TAG}\",\"body\":\"详见 CHANGELOG.md\"}" \
+    -H "Content-Type: application/json" \
+    -d "$PAYLOAD" \
     https://api.github.com/repos/alosir/AloCard/releases | grep -o '"id": *[0-9]*' | head -1 | grep -o '[0-9]*')
   curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
     -H "Content-Type: application/vnd.android.package-archive" \
