@@ -87,6 +87,31 @@ fun AloCardNavHost(
             navController = navController,
             startDestination = Routes.HOME,
             modifier = Modifier.padding(innerPadding),
+            // 完整页面：打开从右侧快速滑入，返回向右快速滑出（项 1）
+            enterTransition = {
+                androidx.compose.animation.slideInHorizontally(
+                    initialOffsetX = { it },
+                    animationSpec = androidx.compose.animation.core.tween(220),
+                )
+            },
+            exitTransition = {
+                androidx.compose.animation.slideOutHorizontally(
+                    targetOffsetX = { -it / 3 },
+                    animationSpec = androidx.compose.animation.core.tween(220),
+                )
+            },
+            popEnterTransition = {
+                androidx.compose.animation.slideInHorizontally(
+                    initialOffsetX = { -it / 3 },
+                    animationSpec = androidx.compose.animation.core.tween(220),
+                )
+            },
+            popExitTransition = {
+                androidx.compose.animation.slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = androidx.compose.animation.core.tween(220),
+                )
+            },
         ) {
             composable(Routes.HOME) {
                 HomeScreen(
@@ -214,6 +239,25 @@ fun AloCardNavHost(
             composable(
                 Routes.AMOUNT_ENTRY,
                 arguments = listOf(navArgument("groupId") { type = NavType.LongType }),
+                // 浮层：从底部向上滑入，关闭向下滑出
+                enterTransition = {
+                    androidx.compose.animation.slideInVertically(
+                        initialOffsetY = { it },
+                        animationSpec = androidx.compose.animation.core.tween(240),
+                    )
+                },
+                exitTransition = {
+                    androidx.compose.animation.slideOutVertically(
+                        targetOffsetY = { it },
+                        animationSpec = androidx.compose.animation.core.tween(240),
+                    )
+                },
+                popExitTransition = {
+                    androidx.compose.animation.slideOutVertically(
+                        targetOffsetY = { it },
+                        animationSpec = androidx.compose.animation.core.tween(240),
+                    )
+                },
             ) { entry ->
                 val groupId = entry.arguments?.getLong("groupId") ?: -1L
                 AmountEntryScreen(
@@ -225,6 +269,24 @@ fun AloCardNavHost(
             composable(
                 Routes.PAYMENT_MARK,
                 arguments = listOf(navArgument("groupId") { type = NavType.LongType }),
+                enterTransition = {
+                    androidx.compose.animation.slideInVertically(
+                        initialOffsetY = { it },
+                        animationSpec = androidx.compose.animation.core.tween(240),
+                    )
+                },
+                exitTransition = {
+                    androidx.compose.animation.slideOutVertically(
+                        targetOffsetY = { it },
+                        animationSpec = androidx.compose.animation.core.tween(240),
+                    )
+                },
+                popExitTransition = {
+                    androidx.compose.animation.slideOutVertically(
+                        targetOffsetY = { it },
+                        animationSpec = androidx.compose.animation.core.tween(240),
+                    )
+                },
             ) { entry ->
                 val groupId = entry.arguments?.getLong("groupId") ?: -1L
                 PaymentMarkScreen(

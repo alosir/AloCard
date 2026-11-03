@@ -212,28 +212,36 @@ fun AddCardScreen(
             // ---- 卡片信息 ----
             Section {
                 SectionTitle("卡片信息")
-                FilledField(
-                    value = ui.cardNumber,
-                    onValueChange = viewModel::onCardNumberChange,
-                    label = "卡号",
-                    placeholder = "输入即识别银行与卡组织",
-                    numeric = true,
-                    isError = ui.cardNumberError != null,
-                    supportingText = when {
-                        scanning -> "正在识别卡面…"
-                        else -> ui.cardNumberError ?: ui.cardNumberNote ?: "支持银联 / Visa / Mastercard / JCB · 本地离线识别"
-                    },
-                    visualTransformation = com.alosir.card.ui.common.CardNumberVisualTransformation(),
-                    trailingIcon = {
-                        androidx.compose.material3.Icon(
-                            androidx.compose.material.icons.Icons.Default.PhotoCamera,
-                            contentDescription = "扫一扫识别卡面",
-                            tint = colors.goldText,
-                            modifier = Modifier.clickable { startCardScan() }.padding(8.dp),
-                        )
-                    },
-                )
-                Spacer(Modifier.height(12.dp))
+                if (ui.isEditing) {
+                    // 卡号与所属银行只读，不允许变更（项 7）
+                    com.alosir.card.ui.common.KeyValueRow("卡号（不可变更）", "尾号 ${ui.cardTail}")
+                    com.alosir.card.ui.common.KeyValueRow("银行（不可变更）", ui.bankName.ifEmpty { "未识别" })
+                    Spacer(Modifier.height(12.dp))
+                }
+                if (!ui.isEditing) {
+                    FilledField(
+                        value = ui.cardNumber,
+                        onValueChange = viewModel::onCardNumberChange,
+                        label = "卡号",
+                        placeholder = "输入即识别银行与卡组织",
+                        numeric = true,
+                        isError = ui.cardNumberError != null,
+                        supportingText = when {
+                            scanning -> "正在识别卡面…"
+                            else -> ui.cardNumberError ?: ui.cardNumberNote ?: "支持银联 / Visa / Mastercard / JCB · 本地离线识别"
+                        },
+                        visualTransformation = com.alosir.card.ui.common.CardNumberVisualTransformation(),
+                        trailingIcon = {
+                            androidx.compose.material3.Icon(
+                                androidx.compose.material.icons.Icons.Default.PhotoCamera,
+                                contentDescription = "扫一扫识别卡面",
+                                tint = colors.goldText,
+                                modifier = Modifier.clickable { startCardScan() }.padding(8.dp),
+                            )
+                        },
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
                 FilledField(
                     value = ui.cardName,
                     onValueChange = viewModel::onCardNameChange,
@@ -246,39 +254,41 @@ fun AddCardScreen(
                     onValueChange = viewModel::onExpiryChange,
                     label = "有效期",
                 )
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = "常用银行（点选，或下方手输）",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(6.dp))
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
-                ) {
-                    listOf("招商银行", "工商银行", "建设银行", "农业银行", "中国银行", "交通银行", "中信银行", "兴业银行").forEach { bank ->
-                        ChoiceChip(
-                            selected = ui.bankName == bank,
-                            text = bank,
-                            onClick = { viewModel.onBankNameChange(bank) },
-                        )
+                if (!ui.isEditing) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = "常用银行（点选，或下方手输）",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Row(
+                        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+                    ) {
+                        listOf("招商银行", "工商银行", "建设银行", "农业银行", "中国银行", "交通银行", "中信银行", "兴业银行").forEach { bank ->
+                            ChoiceChip(
+                                selected = ui.bankName == bank,
+                                text = bank,
+                                onClick = { viewModel.onBankNameChange(bank) },
+                            )
+                        }
                     }
+                    Spacer(Modifier.height(8.dp))
+                    FilledField(
+                        value = ui.bankName,
+                        onValueChange = viewModel::onBankNameChange,
+                        label = "银行",
+                        placeholder = "选填，识别不到时手动填写",
+                        supportingText = if (ui.detectedFromNumber) "根据卡号识别，可修改" else null,
+                    )
                 }
-                Spacer(Modifier.height(8.dp))
-                FilledField(
-                    value = ui.bankName,
-                    onValueChange = viewModel::onBankNameChange,
-                    label = "银行",
-                    placeholder = "选填，识别不到时手动填写",
-                    supportingText = if (ui.detectedFromNumber) "根据卡号识别，可修改" else null,
-                )
                 Spacer(Modifier.height(4.dp))
                 HintText("卡组织：${schemeLabel(ui.cardScheme)} · 卡号在本地加密存储，界面默认只显示末 4 位。")
             }
 
-            // ---- 账期与额度（新建组时编辑；加入组时只读继承说明） ----
-            if (!ui.isEditing && ui.choice != GroupChoice.JOIN) {
+            // ---- 账期与额度（新建组时编辑；加入组时只读继承说明；编辑卡片时可修改） ----
+            if (ui.isEditing || ui.choice != GroupChoice.JOIN) {
                 Section {
                     SectionTitle("账期与额度")
                     Text(

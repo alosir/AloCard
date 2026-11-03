@@ -81,7 +81,7 @@ fun CreditCardFace(
                             painter = androidx.compose.ui.res.painterResource(res),
                             contentDescription = null,
                             contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-                            modifier = Modifier.size(26.dp).clip(RoundedCornerShape(7.dp)),
+                            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(7.dp)),
                         )
                         Spacer(Modifier.width(8.dp))
                     }

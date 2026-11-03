@@ -40,6 +40,9 @@ object BankLogos {
         "浙商银行" to R.drawable.bank_czbank,
         "北京银行" to R.drawable.bank_bob,
         "上海银行" to R.drawable.bank_bosh,
+        "南京银行" to R.drawable.bank_njcb,
+        "渤海银行" to R.drawable.bank_bhbank,
+        "杭州银行" to R.drawable.bank_hzbank,
     )
 
     /** 银行名（可含「中国」前缀）→ drawable 资源；未覆盖返回 null */
@@ -58,17 +61,13 @@ fun BankLogo(
     glyph: String,
     color: Color,
     modifier: Modifier = Modifier,
-    size: Dp = 36.dp,
+    size: Dp = 32.dp,
 ) {
     val res = BankLogos.drawableFor(bankName)
-    if (res != null) {
-        Image(
-            painter = painterResource(res),
-            contentDescription = bankName,
-            contentScale = ContentScale.Fit,
-            modifier = modifier.size(size).clip(RoundedCornerShape(9.dp)),
-        )
-    } else {
-        BankChip(color = color, glyph = glyph, modifier = modifier)
-    }
+    Image(
+        painter = painterResource(res ?: R.drawable.bank_placeholder),
+        contentDescription = bankName ?: "未知银行",
+        contentScale = ContentScale.Fit,
+        modifier = modifier.size(size).clip(RoundedCornerShape(9.dp)),
+    )
 }

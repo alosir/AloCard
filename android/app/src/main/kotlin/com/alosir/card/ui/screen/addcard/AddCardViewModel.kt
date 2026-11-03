@@ -38,6 +38,10 @@ data class AddCardUiState(
     /** 银行/卡组织来自号段自动识别（用户覆盖后清除标注，PRD F1.1） */
     val detectedFromNumber: Boolean = false,
     val cardNumberNote: String? = null,
+    // 编辑模式所属组（用于回写账期额度；卡号与银行不在此处变更）
+    val groupIdOfCard: Long = -1L,
+    val groupNameOfCard: String = "",
+    val cardTail: String = "",
     // 账单组
     val choice: GroupChoice = GroupChoice.NEW,
     val matchedGroup: BillingGroup? = null,
@@ -85,22 +89,32 @@ class AddCardViewModel @Inject constructor(
         _ui.value = d
     }
 
-    /** 编辑模式：预填已有卡片 */
+    /** 编辑模式：预填已有卡片与所属组的账期额度（卡号与银行不可变更） */
     fun loadCard(cardId: Long) {
         if (_ui.value.isEditing) return
         viewModelScope.launch {
             val card = cardRepository.observeCard(cardId).first() ?: return@launch
+            val group = groupRepository.observeGroups().first()
+                .firstOrNull { it.id == card.groupId }
             _ui.update {
                 it.copy(
                     isEditing = true,
                     cardId = card.id,
+                    cardTail = card.cardNumberLast4 ?: "????",
                     cardNumber = "",
-                    cardNumberNote = if (card.hasCardNumber) "已保存完整卡号（输入新卡号可替换）" else null,
+                    cardNumberNote = if (card.hasCardNumber) "已保存完整卡号（不可变更）" else null,
                     cardName = card.cardLabel ?: "",
                     expiryYm = card.expiryYm ?: "",
-                    bankName = card.bankName ?: "",
+                    bankName = card.bankName ?: group?.bankName ?: "",
                     cardScheme = card.cardScheme,
                     choice = GroupChoice.NEW,
+                    groupIdOfCard = card.groupId,
+                    groupNameOfCard = group?.name ?: "",
+                    billingDayText = group?.billingDay?.toString() ?: "",
+                    dueOffsetDays = group?.dueOffsetDays ?: 20,
+                    creditLimitText = group?.creditLimitCents?.let { c ->
+                        Money.format(c).removePrefix("¥").replace(",", "")
+                    } ?: "",
                 )
             }
         }
@@ -263,6 +277,18 @@ class AddCardViewModel @Inject constructor(
                         cardScheme = state.cardScheme,
                         cardLabel = state.cardName.takeIf { it.isNotBlank() },
                         bankName = state.bankName.takeIf { it.isNotBlank() },
+                    )
+                    // 回写所属组的账期与额度（组名/银行不变）
+                    val editDay = state.billingDayText.trim().toIntOrNull()
+                    groupRepository.updateGroup(
+                        BillingGroup(
+                            id = state.groupIdOfCard,
+                            name = state.groupNameOfCard.ifEmpty { state.bankName },
+                            billingDay = editDay,
+                            dueOffsetDays = if (editDay != null) state.dueOffsetDays else null,
+                            creditLimitCents = Money.parseToCents(state.creditLimitText),
+                            bankName = state.bankName.takeIf { it.isNotBlank() },
+                        )
                     )
                     _ui.update { it.copy(savedGroupId = -2L) } // -2 = 编辑完成
                 } catch (e: Exception) {

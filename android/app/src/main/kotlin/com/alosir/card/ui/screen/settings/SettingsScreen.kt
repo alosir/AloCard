@@ -107,6 +107,9 @@ fun SettingsScreen(
 
     var showChangelog by remember { mutableStateOf(false) }
 
+    // 弹窗日志区高度不超过屏高 2/3（项 2）
+    val logMaxHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 2 / 3).dp
+
     val updateHint = when (val r = updateCheck) {
         null -> "从 GitHub 获取最新版本"
         UpdateCheckResult.Checking -> "正在检查…"
@@ -319,7 +322,7 @@ fun SettingsScreen(
             onDismissRequest = { showChangelog = false },
             title = { Text("更新日志") },
             text = {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
+                Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = logMaxHeight)) {
                     val text = changelogText
                     if (text == null) {
                         Text("加载中…", style = MaterialTheme.typography.bodyMedium)
@@ -345,7 +348,7 @@ fun SettingsScreen(
                 Column {
                     // 显示该版本的真实更新日志（Release body），而非占位文案
                     if (release.body.isNotBlank()) {
-                        Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = 280.dp)) {
+                        Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = logMaxHeight)) {
                             ChangelogContent(release.body)
                         }
                         Spacer(Modifier.height(12.dp))

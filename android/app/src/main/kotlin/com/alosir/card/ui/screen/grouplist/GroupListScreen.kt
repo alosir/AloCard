@@ -24,6 +24,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +53,7 @@ fun GroupListScreen(
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
     val colors = AloCardTheme.colors
+    var showAddBill by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -78,15 +82,16 @@ fun GroupListScreen(
             }
         },
         floatingActionButton = {
+            // 「+」= 添加账单（补录最近一期未录入的账单），不是添加卡片
             Box(
                 Modifier
                     .size(54.dp)
                     .clip(RoundedCornerShape(18.dp))
                     .background(goldBrush())
-                    .clickable { onAddCard() },
+                    .clickable { showAddBill = true },
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Default.Add, contentDescription = "新增卡片", tint = colors.onGold)
+                Icon(Icons.Default.Add, contentDescription = "添加账单", tint = colors.onGold)
             }
         },
     ) { innerPadding ->
@@ -122,5 +127,20 @@ fun GroupListScreen(
                 }
             }
         }
+    }
+
+    // 添加账单弹窗：底部向上滑入，关闭向下滑出
+    androidx.compose.animation.AnimatedVisibility(
+        visible = showAddBill,
+        enter = androidx.compose.animation.slideInVertically(
+            initialOffsetY = { it },
+            animationSpec = androidx.compose.animation.core.tween(240),
+        ),
+        exit = androidx.compose.animation.slideOutVertically(
+            targetOffsetY = { it },
+            animationSpec = androidx.compose.animation.core.tween(240),
+        ),
+    ) {
+        AddBillSheet(onDismiss = { showAddBill = false }, onAddCard = onAddCard)
     }
 }
