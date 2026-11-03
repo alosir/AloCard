@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,18 +50,15 @@ fun AppLockGate(
     biometricEnabled: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    var unlocked by remember { mutableStateOf(security.isSessionUnlocked()) }
-    // 会话状态随时间变化（解锁有效期/后台超时锁定），秒级轮询触发重组
-    LaunchedEffect(Unit) {
-        while (true) {
-            kotlinx.coroutines.delay(1_000)
-            unlocked = security.isSessionUnlocked()
-        }
-    }
-    if (unlocked) {
+    val unlocked by security.sessionUnlocked.collectAsState()
+
+    // 覆盖层而非替换：内容始终组合，锁住时只盖锁屏——
+    // 解锁后回到原页面（含表单的输入中状态），不会丢回首页
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
         content()
-    } else {
-        LockScreen(security = security, biometricEnabled = biometricEnabled, onUnlocked = { unlocked = true })
+        if (!unlocked) {
+            LockScreen(security = security, biometricEnabled = biometricEnabled, onUnlocked = { /* 流驱动 */ })
+        }
     }
 }
 

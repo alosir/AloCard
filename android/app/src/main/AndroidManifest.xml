@@ -3,6 +3,8 @@
 
     <!-- 通知：还款提醒、账单录入引导与免息期 TOP 常驻通知（ADR-0011/0012） -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 卡面扫描：拍照后由本机 ML Kit OCR 识别卡号/有效期/银行名，照片不出设备 -->
+    <uses-permission android:name="android.permission.CAMERA" />
     <!--
       更新通道（唯一的网络用途）：检查 GitHub 最新 Release 并下载 APK。
       不连接银行、没有账号体系、无云同步——产品核心「数据不出网」不变，

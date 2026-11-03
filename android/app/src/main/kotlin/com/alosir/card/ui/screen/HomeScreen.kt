@@ -109,17 +109,12 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        "Alo",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        "Card",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = colors.goldText,
+                    // 金色文字型 logo（素材：用户提供的 AloCard 字标）
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(com.alosir.card.R.drawable.alocard_logo),
+                        contentDescription = "AloCard",
+                        contentScale = androidx.compose.ui.layout.ContentScale.FillHeight,
+                        modifier = Modifier.height(24.dp),
                     )
                 }
                 Spacer(Modifier.weight(1f))
@@ -167,7 +162,7 @@ fun HomeScreen(
                             state = pagerState,
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp),
                             pageSpacing = 14.dp,
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         ) { page ->
                             val (g, c) = carousel[page]
                             CreditCardFace(

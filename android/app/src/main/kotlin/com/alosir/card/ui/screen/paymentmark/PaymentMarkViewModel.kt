@@ -98,5 +98,13 @@ class PaymentMarkViewModel @Inject constructor(
         }
     }
 
+    /** 「全部」：一键填入剩余待还（账单 − 已还） */
+    fun fillAllOutstanding() {
+        val remain = ((billAmountCentsOrZero()) - (_ui.value.paidAmountCents ?: 0L)).coerceAtLeast(0L)
+        onAmountChange(Money.format(remain).removePrefix("¥").replace(",", ""))
+    }
+
+    private fun billAmountCentsOrZero(): Long = _ui.value.billAmountCents ?: 0L
+
     fun markSavedHandled() = _ui.update { it.copy(saved = false) }
 }

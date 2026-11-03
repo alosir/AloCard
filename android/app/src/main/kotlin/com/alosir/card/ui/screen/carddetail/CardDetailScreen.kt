@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alosir.card.domain.util.Money
+import com.alosir.card.ui.common.groupCardNumber
 import com.alosir.card.ui.common.ActionRow
 import com.alosir.card.ui.common.HintText
 import com.alosir.card.ui.common.KeyValueRow
@@ -277,17 +279,39 @@ private fun CardInfoRow(
     Column(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(vertical = 6.dp),
     ) {
+        Text(
+            text = card.displayName,
+            style = MaterialTheme.typography.bodyLarge,
+            maxLines = 1,
+        )
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = card.displayName,
-                style = MaterialTheme.typography.bodyLarge,
+                text = revealed?.let { groupCardNumber(it) } ?: "•••• •••• •••• ${card.tail}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (revealed != null) colors.due else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
                 maxLines = 1,
             )
+            // 复制与显隐图标右对齐、与卡号同一水平线
+            if (revealed != null) {
+                val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+                val appContext = androidx.compose.ui.platform.LocalContext.current
+                IconButton(onClick = {
+                    clipboard.setText(androidx.compose.ui.text.AnnotatedString(revealed))
+                    android.widget.Toast.makeText(appContext, "卡号已复制", android.widget.Toast.LENGTH_SHORT).show()
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = "复制卡号",
+                        tint = colors.goldText,
+                        modifier = Modifier.width(16.dp),
+                    )
+                }
+            }
             if (card.hasNumber) {
                 IconButton(onClick = { if (revealed == null) onReveal() else onHide() }) {
                     Icon(
@@ -299,11 +323,6 @@ private fun CardInfoRow(
                 }
             }
         }
-        Text(
-            text = revealed ?: "•••• •••• •••• ${card.tail}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (revealed != null) colors.due else MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         HintText(
             "有效期 ${card.expiryYm ?: "未填"} · ${card.schemeDisplay}",
             modifier = Modifier.padding(top = 2.dp),

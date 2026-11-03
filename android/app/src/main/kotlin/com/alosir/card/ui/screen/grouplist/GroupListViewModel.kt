@@ -87,7 +87,7 @@ class GroupListViewModel @Inject constructor(
                     dueSubText = DateEngine.dueDateOf(billDay, offset, today).let {
                         "${it.monthValue}/${it.dayOfMonth} 还款"
                     },
-                    dueState = if (billState == BillState.SETTLED && rawDue != DueState.OVERDUE) DueState.NORMAL else rawDue,
+                    dueState = if (billState == BillState.SETTLED) DueState.NORMAL else rawDue,
                     billState = billState,
                     billDate = DateEngine.currentBillingDate(billDay, today),
                     dueDate = DateEngine.dueDateOf(billDay, offset, today),

@@ -108,7 +108,8 @@ fun GroupDetailScreen(
                     else -> BillState.DUE_UNPAID
                 }
                 val dueDays = DateEngine.daysUntilDue(group.billingDay, group.dueOffsetDays, today)
-                val dueState = if (dueDays == null) DueState.NORMAL else when (DateEngine.dueStatus(dueDays)) {
+                // 已结清（剩余待还 ≤ 0）永不逾期——即使已过最后还款日
+                val dueState = if (billState == BillState.SETTLED || dueDays == null) DueState.NORMAL else when (DateEngine.dueStatus(dueDays)) {
                     DateEngine.STATUS_DUE -> DueState.DUE
                     DateEngine.STATUS_OVERDUE -> DueState.OVERDUE
                     else -> DueState.NORMAL

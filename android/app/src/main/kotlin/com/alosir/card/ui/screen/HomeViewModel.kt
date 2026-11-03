@@ -155,8 +155,8 @@ class HomeViewModel @Inject constructor(
                 dueDays == null -> "补充账期后可用"
                 else -> "$dueDays 天后还款"
             }
-            // 已结清且无逾期：时效强调降级为普通（格带仍显示）
-            val dueState = if (billState == BillState.SETTLED && rawDueState != DueState.OVERDUE) {
+            // 已结清（剩余待还 ≤ 0）永不逾期——即使已过最后还款日
+            val dueState = if (billState == BillState.SETTLED) {
                 DueState.NORMAL
             } else {
                 rawDueState

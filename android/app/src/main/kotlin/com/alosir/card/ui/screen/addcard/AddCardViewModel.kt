@@ -67,6 +67,24 @@ class AddCardViewModel @Inject constructor(
     private val _ui = MutableStateFlow(AddCardUiState())
     val ui: StateFlow<AddCardUiState> = _ui.asStateFlow()
 
+    /** 每次编辑后暂存草稿（进程内，1 小时有效） */
+    private fun persistDraft() {
+        draft = _ui.value.copy(saving = false, savedGroupId = null)
+        draftAt = System.currentTimeMillis()
+    }
+
+    /** 新建卡片时恢复 1 小时内的未保存草稿；编辑模式不恢复 */
+    fun restoreDraftIfFresh() {
+        if (_ui.value.isEditing) return
+        if (_ui.value.cardNumber.isNotEmpty() || _ui.value.cardName.isNotEmpty()) return
+        val d = draft ?: return
+        if (System.currentTimeMillis() - draftAt > DRAFT_TTL_MS) {
+            draft = null
+            return
+        }
+        _ui.value = d
+    }
+
     /** 编辑模式：预填已有卡片 */
     fun loadCard(cardId: Long) {
         if (_ui.value.isEditing) return
@@ -109,6 +127,7 @@ class AddCardViewModel @Inject constructor(
         }
         // 银行/卡号变化后重新做「同银行 + 账单日相同」的合并出账匹配
         maybeMatchGroup()
+        persistDraft()
     }
 
     fun onCardNumberDone() {
@@ -141,19 +160,28 @@ class AddCardViewModel @Inject constructor(
         maybeMatchGroup()
     }
 
-    fun onCardNameChange(value: String) = _ui.update { it.copy(cardName = value) }
+    fun onCardNameChange(value: String) {
+        _ui.update { it.copy(cardName = value) }
+        persistDraft()
+    }
 
     fun onExpiryChange(value: String) {
         val error = if (value.isEmpty()) null
         else if (!EXPIRY_RE.matches(value)) "有效期格式须为 YYYY-MM"
         else null
         _ui.update { it.copy(expiryYm = value, expiryError = error) }
+        persistDraft()
     }
 
-    fun onBankNameChange(value: String) =
+    fun onBankNameChange(value: String) {
         _ui.update { it.copy(bankName = value, detectedFromNumber = false) }
+        persistDraft()
+    }
 
-    fun onChoiceChange(choice: GroupChoice) = _ui.update { it.copy(choice = choice) }
+    fun onChoiceChange(choice: GroupChoice) {
+        _ui.update { it.copy(choice = choice) }
+        persistDraft()
+    }
 
     fun onGroupNameChange(value: String) = _ui.update { it.copy(groupName = value) }
 
@@ -166,10 +194,12 @@ class AddCardViewModel @Inject constructor(
         }
         _ui.update { it.copy(billingDayText = value, billingDayError = error) }
         maybeMatchGroup()
+        persistDraft()
     }
 
     fun onDueOffsetChange(offset: Int) {
         _ui.update { it.copy(dueOffsetDays = offset.coerceIn(1, 28), dueInputMode = DueInputMode.OFFSET_DAYS) }
+        persistDraft()
     }
 
     fun onFixedDayChange(value: String) {
@@ -190,7 +220,10 @@ class AddCardViewModel @Inject constructor(
         _ui.update { it.copy(dueOffsetDays = n.coerceIn(1, 28)) }
     }
 
-    fun onCreditLimitChange(value: String) = _ui.update { it.copy(creditLimitText = value) }
+    fun onCreditLimitChange(value: String) {
+        _ui.update { it.copy(creditLimitText = value) }
+        persistDraft()
+    }
 
     /** 「同一银行 + 账单日相同」命中已有组时提示加入（PRD F2.2） */
     private fun maybeMatchGroup() {
@@ -279,6 +312,7 @@ class AddCardViewModel @Inject constructor(
                     bankName = state.bankName.takeIf { it.isNotBlank() },
                 )
                 _ui.update { it.copy(savedGroupId = groupId) }
+                draft = null // 保存成功即清除草稿
             } catch (e: Exception) {
                 _ui.update { it.copy(saving = false, error = "保存失败：${e.message}") }
             }
@@ -287,5 +321,10 @@ class AddCardViewModel @Inject constructor(
 
     companion object {
         val EXPIRY_RE = Regex("""^\d{4}-(0[1-9]|1[0-2])$""")
+
+        /** 添加卡片草稿（进程内暂存，1 小时有效；保存成功后清除） */
+        private var draft: AddCardUiState? = null
+        private var draftAt: Long = 0L
+        private const val DRAFT_TTL_MS = 60 * 60 * 1000L
     }
 }

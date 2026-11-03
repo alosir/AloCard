@@ -163,7 +163,7 @@ fun SettingsScreen(
         }
     }
 
-    PageScaffold(title = "设置", onBack = onBack) {
+    PageScaffold(title = "设置", onBack = null) {
         Column(
             Modifier
                 .fillMaxSize()

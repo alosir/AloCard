@@ -64,7 +64,7 @@ fun PageScaffold(
     val paper = MaterialTheme.colorScheme.surface
     val ink = MaterialTheme.colorScheme.onSurface
 
-    Column(Modifier.fillMaxSize().background(paper)) {
+    Column(Modifier.fillMaxSize().background(paper).imePadding()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -100,7 +100,7 @@ fun PageScaffold(
             }
             actions()
         }
-        Box(Modifier.weight(1f).fillMaxWidth().imePadding()) { content() }
+        Box(Modifier.weight(1f).fillMaxWidth()) { content() }
         bottomBar()
     }
 }
@@ -177,6 +177,9 @@ fun FilledField(
     supportingText: String? = null,
     isError: Boolean = false,
     textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
+    visualTransformation: androidx.compose.ui.text.input.VisualTransformation =
+        androidx.compose.ui.text.input.VisualTransformation.None,
+    trailingIcon: @Composable (() -> Unit)? = null,
 ) {
     val colors = AloCardTheme.colors
     val bringIntoView = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
@@ -191,6 +194,8 @@ fun FilledField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
+            visualTransformation = visualTransformation,
+            trailingIcon = trailingIcon,
             modifier = Modifier
                 .fillMaxWidth()
                 .bringIntoViewRequester(bringIntoView)

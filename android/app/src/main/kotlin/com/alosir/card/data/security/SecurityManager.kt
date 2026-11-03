@@ -12,6 +12,9 @@ import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * 安全密码（4 位 PIN）管理。
@@ -53,6 +56,10 @@ class SecurityManager @Inject constructor(
     /** 会话解锁有效期截止时间戳；0 表示未解锁 */
     var unlockedUntil: Long = 0L
         private set
+
+    /** 应用锁会话状态（StateFlow）：仅进程启动/后台超时被锁，前台不因时间推移自动重验 */
+    private val _sessionUnlocked = MutableStateFlow(false)
+    val sessionUnlocked: StateFlow<Boolean> = _sessionUnlocked.asStateFlow()
 
     fun hasPin(): Boolean = prefs.contains(KEY_HASH)
 
@@ -96,6 +103,7 @@ class SecurityManager @Inject constructor(
                 .putLong(KEY_LOCK_UNTIL, 0L)
                 .apply()
             unlockedUntil = now + SESSION_DURATION_MS
+            _sessionUnlocked.value = true
             VerifyResult.Success
         } else {
             val fails = prefs.getInt(KEY_FAIL_COUNT, 0) + 1
@@ -119,11 +127,13 @@ class SecurityManager @Inject constructor(
     /** 生物识别等旁路验证通过后，同样开启会话（PRD F10.2 规则 3） */
     fun unlockSession() {
         unlockedUntil = System.currentTimeMillis() + SESSION_DURATION_MS
+        _sessionUnlocked.value = true
     }
 
     /** 立即锁定（后台超时回到前台时由 Activity 调用，PRD F10.2 规则 1） */
     fun lockNow() {
         unlockedUntil = 0L
+        _sessionUnlocked.value = false
     }
 
     /**
@@ -157,6 +167,7 @@ class SecurityManager @Inject constructor(
     fun clearPin() {
         prefs.edit().clear().apply()
         unlockedUntil = 0L
+        _sessionUnlocked.value = false
     }
 
     /** 锁定剩余秒数；未锁定返回 0 */

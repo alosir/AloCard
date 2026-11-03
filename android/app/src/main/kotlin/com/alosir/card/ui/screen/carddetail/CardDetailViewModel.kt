@@ -109,7 +109,8 @@ class CardDetailViewModel @Inject constructor(
                 dueDays == null -> "补充账期后可用"
                 else -> "$dueDays 天后还款"
             }
-            val dueState = if (billState == BillState.SETTLED && rawDue != DueState.OVERDUE) {
+            // 已结清（剩余待还 ≤ 0）永不逾期——即使已过最后还款日
+            val dueState = if (billState == BillState.SETTLED) {
                 DueState.NORMAL
             } else {
                 rawDue

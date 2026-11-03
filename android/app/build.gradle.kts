@@ -128,6 +128,7 @@ dependencies {
     // --- 安全 ---
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.biometric)
+    implementation(libs.mlkit.text.recognition)
 
     // --- 依赖注入 ---
     implementation(libs.hilt.android)

@@ -32,7 +32,7 @@ enum class TopDestination(
     val label: String,
     val icon: ImageVector,
 ) {
-    CARDS(Routes.HOME, "卡片", Icons.Default.Home),
+    CARDS(Routes.HOME, "首页", Icons.Default.Home),
     QUOTA(Routes.QUOTA, "额度", Icons.Default.Star),
     BILLS(Routes.GROUPS, "账单", Icons.Default.DateRange),
     SETTINGS(Routes.SETTINGS, "设置", Icons.Default.Settings),

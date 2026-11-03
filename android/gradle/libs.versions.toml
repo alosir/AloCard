@@ -51,6 +51,9 @@ androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navig
 # WorkManager
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
 
+# 卡面 OCR（本机识别卡号/有效期/银行名；模型首次使用需联网下载，之后离线）
+mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version = "16.0.1" }
+
 # 协程与测试
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

@@ -66,18 +66,21 @@ fun AloCardNavHost(
 
     Scaffold(
         bottomBar = {
-            AloCardBottomBar(
-                currentRoute = currentRoute,
-                onNavigate = { route ->
-                    if (route != currentRoute) {
-                        navController.navigate(route) {
-                            popUpTo(Routes.HOME) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+            // 仅一级页面显示底部导航；二级流程页（加卡/详情/录入等）全屏
+            if (currentRoute in listOf(Routes.HOME, Routes.QUOTA, Routes.GROUPS, Routes.SETTINGS)) {
+                AloCardBottomBar(
+                    currentRoute = currentRoute,
+                    onNavigate = { route ->
+                        if (route != currentRoute) {
+                            navController.navigate(route) {
+                                popUpTo(Routes.HOME) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
-                    }
-                },
-            )
+                    },
+                )
+            }
         },
     ) { innerPadding ->
         NavHost(

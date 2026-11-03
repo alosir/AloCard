@@ -56,8 +56,12 @@ fun GroupListScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text("Alo", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
-                    Text("Card", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = colors.goldText)
+                    Text(
+                        "账单",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
                 }
                 Spacer(Modifier.weight(1f))
                 Text(
@@ -89,7 +93,7 @@ fun GroupListScreen(
                     onAction = onAddCard,
                 )
             } else {
-                LazyColumn(Modifier.fillMaxSize()) {
+                LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 4.dp)) {
                     items(ui.rows, key = { it.groupId }) { row ->
                         BankLedgerRow(
                             bankName = row.bankName,

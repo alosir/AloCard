@@ -1,30 +1,15 @@
 package com.alosir.card.ui.screen.paymentmark
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.alosir.card.ui.common.ActionRow
-import com.alosir.card.ui.common.FilledField
-import com.alosir.card.ui.common.HintText
-import com.alosir.card.ui.common.PageScaffold
-import com.alosir.card.ui.common.Section
-import com.alosir.card.ui.common.SectionTitle
+import com.alosir.card.ui.common.AmountSheetScaffold
 
 /**
- * 标记还款页（P9 / F4.1）。累计式：多次标记金额相加。
- * 标记后已用额度即时释放、剩余可用恢复（ADR-0007）。
+ * 标记还款 · v0.0.3：底部浮层 + APP 内数字键盘 + 「全部」一键填剩余待还。
+ * 累计式：多次标记金额相加；标记后已用额度即时释放（ADR-0007）。
  */
 @Composable
 fun PaymentMarkScreen(
@@ -43,47 +28,19 @@ fun PaymentMarkScreen(
         }
     }
 
-    PageScaffold(title = "标记还款", onBack = onBack) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(top = 8.dp),
-        ) {
-            Section {
-                SectionTitle(ui.groupName)
-                HintText(ui.liveHint)
-                Spacer(Modifier.height(12.dp))
-
-                if (ui.blockedReason != null) {
-                    HintText(ui.blockedReason!!, color = MaterialTheme.colorScheme.error)
-                } else {
-                    FilledField(
-                        value = ui.amountText,
-                        onValueChange = viewModel::onAmountChange,
-                        label = "本次还款金额",
-                        placeholder = "0.00",
-                        numeric = true,
-                        isError = ui.amountError != null,
-                        supportingText = ui.amountError
-                            ?: "可标记部分或全部；多次标记为累计。",
-                    )
-                    HintText("标记后可用额度即时释放。", Modifier.padding(top = 6.dp))
-                }
-            }
-
-            if (ui.blockedReason == null) {
-                ActionRow(
-                    cancelText = "取消",
-                    onCancel = onBack,
-                    confirmText = "确认标记",
-                    onConfirm = viewModel::save,
-                    confirmEnabled = !ui.saving && ui.amountError == null &&
-                        ui.amountText.isNotBlank(),
-                )
-            } else {
-                Spacer(Modifier.height(24.dp))
-            }
-        }
-    }
+    AmountSheetScaffold(
+        title = "标记还款",
+        onDismiss = onBack,
+        amountText = ui.amountText,
+        onAmountChange = viewModel::onAmountChange,
+        amountLabel = "本次还款金额（元）",
+        error = ui.amountError,
+        infoLine = ui.groupName,
+        fieldHint = "可部分或全部，多次标记为累计；标记后额度即时释放。",
+        onFillAll = viewModel::fillAllOutstanding,
+        confirmText = "确认标记",
+        onConfirm = viewModel::save,
+        confirmEnabled = !ui.saving && ui.amountError == null && ui.amountText.isNotBlank(),
+        blockedReason = ui.blockedReason,
+    )
 }

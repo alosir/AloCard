@@ -44,6 +44,15 @@ fun GroupFormScreen(
     PageScaffold(
         title = if (ui.isEditing) "编辑账单组" else "新建账单组",
         onBack = onBack,
+        bottomBar = {
+            ActionRow(
+                cancelText = "取消",
+                onCancel = onBack,
+                confirmText = "保存",
+                onConfirm = viewModel::save,
+                confirmEnabled = !ui.saving && ui.nameError == null && ui.billingDayError == null,
+            )
+        },
     ) {
         Column(
             Modifier
@@ -93,13 +102,7 @@ fun GroupFormScreen(
                 )
             }
 
-            ActionRow(
-                cancelText = "取消",
-                onCancel = onBack,
-                confirmText = "保存",
-                onConfirm = viewModel::save,
-                confirmEnabled = !ui.saving && ui.nameError == null && ui.billingDayError == null,
-            )
+            Spacer(Modifier.height(12.dp))
         }
     }
 }

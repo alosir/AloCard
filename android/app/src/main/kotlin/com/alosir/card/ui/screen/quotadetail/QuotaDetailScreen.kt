@@ -43,10 +43,10 @@ fun QuotaDetailScreen(
     val rows by viewModel.rows.collectAsStateWithLifecycle()
     val colors = AloCardTheme.colors
 
-    PageScaffold(title = "额度", onBack = onBack) {
+    PageScaffold(title = "额度", onBack = null) {
         LazyColumn(Modifier.fillMaxSize()) {
             item {
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(8.dp))
                 CreditOverview(
                     usedCents = totals.usedCents,
                     totalCents = totals.totalLimitCents,
