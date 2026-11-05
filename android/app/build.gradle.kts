@@ -9,6 +9,11 @@ plugins {
 import java.util.Properties
 import java.io.File
 
+// 工作区在华为家庭存储同步盘上：同步进程会在构建期间读写构建产物，
+// 导致「not a regular file / 缓存锁死 / 守护进程崩溃」等随机失败。
+// 构建输出统一重定向到本机用户目录（不进 NAS）；源码仍留在工作区。
+layout.buildDirectory.set(File(System.getProperty("user.home"), ".alocard-build/app"))
+
 android {
     namespace = "com.alosir.card"
     compileSdk = 35
@@ -38,8 +43,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // R8 在内存耗尽环境下会 JVM 崩溃；可用 -Palocard.minify=false 临时关闭
+            isMinifyEnabled = (project.findProperty("alocard.minify") as String?) != "false"
+            isShrinkResources = isMinifyEnabled
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

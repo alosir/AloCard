@@ -24,7 +24,8 @@ echo "→ 版本：versionName=${VERSION_NAME} versionCode=${VERSION_CODE}"
 echo "→ 构建 Release APK…"
 (cd android && JAVA_HOME="${JAVA_HOME:-F:/Program Files/Android/Android Studio/jbr}" ./gradlew assembleRelease --console=plain)
 
-APK_SRC="android/app/build/outputs/apk/release/app-release.apk"
+# 构建输出已重定向到本机用户目录（NAS 同步盘会损坏构建产物，见 app/build.gradle.kts）
+APK_SRC="$HOME/.alocard-build/app/outputs/apk/release/app-release.apk"
 [ -f "$APK_SRC" ] || { echo "Release APK 未生成：$APK_SRC" >&2; exit 1; }
 
 # 3. 归档到 releases/
