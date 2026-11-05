@@ -3,4 +3,6 @@
     <!-- 启动窗口背景色，与 DESIGN.md 2.1 一致 -->
     <color name="paper">#F4F5F5</color>
     <color name="paper_dark">#16181C</color>
+    <!-- 启动器图标底色：曜石黑，与黑金字标一致 -->
+    <color name="obsidian">#0B0B0E</color>
 </resources>

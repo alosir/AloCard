@@ -39,13 +39,16 @@ object Biometrics {
                 }
             },
         )
-        prompt.authenticate(
-            BiometricPrompt.PromptInfo.Builder()
-                .setTitle(title)
-                .setSubtitle(subtitle)
-                .setNegativeButtonText(negativeText)
-                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-                .build(),
-        )
+        runCatching {
+            prompt.authenticate(
+                BiometricPrompt.PromptInfo.Builder()
+                    .setTitle(title)
+                    .setSubtitle(subtitle)
+                    .setNegativeButtonText(negativeText)
+                    .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                    .build(),
+            )
+        }
+        // 个别 ROM 弹窗异常时降级为密码输入，不崩溃
     }
 }

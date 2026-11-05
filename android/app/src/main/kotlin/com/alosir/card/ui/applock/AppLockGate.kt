@@ -36,6 +36,7 @@ import com.alosir.card.ui.screen.pin.PinDots
 import com.alosir.card.ui.screen.pin.PinKeypad
 import com.alosir.card.ui.theme.AloCardTheme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -93,9 +94,15 @@ private fun LockScreen(
         )
     }
 
-    // 指纹优先：进入锁屏即唤起系统认证
+    // 指纹优先：等 Activity 进入 RESUMED 再唤起系统认证。
+    // 启动时在 onCreate 阶段直接弹 BiometricPrompt 会因 Fragment 事务早于 onResume 而闪退。
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     LaunchedEffect(canBiometric) {
-        if (canBiometric) promptBiometric()
+        if (canBiometric) {
+            lifecycleOwner.lifecycle.currentStateFlow
+                .first { it.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) }
+            promptBiometric()
+        }
     }
 
     fun submit(value: String) {
