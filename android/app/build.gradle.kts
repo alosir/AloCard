@@ -9,10 +9,9 @@ plugins {
 import java.util.Properties
 import java.io.File
 
-// 工作区在华为家庭存储同步盘上：同步进程会在构建期间读写构建产物，
-// 导致「not a regular file / 缓存锁死 / 守护进程崩溃」等随机失败。
-// 构建输出统一重定向到本机用户目录（不进 NAS）；源码仍留在工作区。
-layout.buildDirectory.set(File(System.getProperty("user.home"), ".alocard-build/app"))
+// 工作区在华为家庭存储同步盘上：同步进程会在构建期间读写构建产物导致随机失败。
+// 构建输出重定向到项目所在盘的根目录（非 NAS 同步目录，且与 KSP 生成文件同盘）。
+layout.buildDirectory.set(File(rootDir.toPath().root.toFile(), "AloCardBuild/app"))
 
 android {
     namespace = "com.alosir.card"

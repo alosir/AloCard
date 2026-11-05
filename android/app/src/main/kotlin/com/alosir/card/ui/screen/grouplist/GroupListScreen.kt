@@ -24,6 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -129,18 +130,35 @@ fun GroupListScreen(
         }
     }
 
-    // 添加账单弹窗：底部向上滑入，关闭向下滑出
-    androidx.compose.animation.AnimatedVisibility(
-        visible = showAddBill,
-        enter = androidx.compose.animation.slideInVertically(
-            initialOffsetY = { it },
-            animationSpec = androidx.compose.animation.core.tween(240),
-        ),
-        exit = androidx.compose.animation.slideOutVertically(
-            targetOffsetY = { it },
-            animationSpec = androidx.compose.animation.core.tween(240),
-        ),
-    ) {
-        AddBillSheet(onDismiss = { showAddBill = false }, onAddCard = onAddCard)
+    // 添加账单弹窗：独立 Dialog 窗口，遮住底部导航栏；上滑入、下滑出
+    if (showAddBill) {
+        val transition = remember {
+            androidx.compose.animation.core.MutableTransitionState(false).apply { targetState = true }
+        }
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showAddBill = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            androidx.compose.animation.AnimatedVisibility(
+                visibleState = transition,
+                enter = androidx.compose.animation.slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = androidx.compose.animation.core.tween(240),
+                ),
+                exit = androidx.compose.animation.slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = androidx.compose.animation.core.tween(240),
+                ),
+            ) {
+                AddBillSheet(
+                    onDismiss = { transition.targetState = false },
+                    onAddCard = { transition.targetState = false; onAddCard() },
+                )
+            }
+            // 出场动画播完再真正关闭 Dialog
+            LaunchedEffect(transition.targetState, transition.isIdle) {
+                if (!transition.targetState && transition.isIdle) showAddBill = false
+            }
+        }
     }
 }

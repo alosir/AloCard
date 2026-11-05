@@ -122,7 +122,7 @@ fun HomeScreen(
                         painter = androidx.compose.ui.res.painterResource(com.alosir.card.R.drawable.alocard_logo),
                         contentDescription = "AloCard",
                         contentScale = androidx.compose.ui.layout.ContentScale.FillHeight,
-                        modifier = Modifier.height(24.dp),
+                        modifier = Modifier.height(32.dp),
                     )
                 }
                 Spacer(Modifier.weight(1f))
