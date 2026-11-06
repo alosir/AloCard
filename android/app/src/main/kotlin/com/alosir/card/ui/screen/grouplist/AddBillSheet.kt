@@ -109,6 +109,14 @@ class AddBillViewModel @Inject constructor(
 
     fun select(id: Long) { selectedGroupId.value = id }
 
+    /** 每次打开弹窗时重置表单（修复：首次保存后 saved 残留 true，导致再次打开立即关闭） */
+    fun resetForm() {
+        saved.value = false
+        saving.value = false
+        amountText.value = ""
+        amountError.value = null
+    }
+
     fun onAmountChange(value: String) {
         amountText.value = value
         amountError.value = null
@@ -151,6 +159,7 @@ fun AddBillSheet(
     val colors = AloCardTheme.colors
     val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
 
+    LaunchedEffect(Unit) { viewModel.resetForm() }
     LaunchedEffect(candidates) {
         if (candidates.isNotEmpty() && selectedId == null) {
             viewModel.select(candidates.first().groupId)

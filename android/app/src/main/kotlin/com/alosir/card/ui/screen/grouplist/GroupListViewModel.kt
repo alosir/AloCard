@@ -95,7 +95,19 @@ class GroupListViewModel @Inject constructor(
                     paidAmountCents = bill?.paidAmountCents ?: 0L,
                     creditLimitCents = group.creditLimitCents,
                 )
-            }.sortedWith(compareBy { it.dueDays ?: Int.MAX_VALUE })
-            GroupListUiState(loading = false, rows = rows)
+            }
+            // 排序：状态优先（已逾期 > 待还款/待录入 > 已结清），类内再按还款日升序
+            GroupListUiState(
+                loading = false,
+                rows = rows.sortedWith(
+                    compareBy<BankBillRow> {
+                        when {
+                            it.dueState == DueState.OVERDUE -> 0
+                            it.billState == BillState.SETTLED -> 2
+                            else -> 1
+                        }
+                    }.thenBy { it.dueDate },
+                ),
+            )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GroupListUiState())
 }
