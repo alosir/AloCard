@@ -53,7 +53,7 @@ fun QuotaDetailScreen(
                     remainCents = totals.remainCents,
                 )
                 HintText(
-                    "同银行合并出账共享额度，不重复计数；剩余可用为偏乐观估算（ADR-0007）。",
+                    "同银行合并出账共享额度，不重复计数；剩余可用为偏乐观估算。",
                     Modifier.padding(horizontal = 20.dp).padding(bottom = 10.dp),
                 )
             }

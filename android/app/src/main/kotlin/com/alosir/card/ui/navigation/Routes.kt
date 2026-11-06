@@ -20,6 +20,9 @@ object Routes {
 
     // 金额操作已改为详情页内浮层（SlideUpSheet），不再使用独立路由
 
+    // 实时卡面识别（CameraX + ML Kit）
+    const val SCAN = "scan"
+
     // 安全
     const val PIN_SETUP = "pin/setup"            // P10 设置安全密码
     const val PIN_CHANGE = "pin/change"          // P10 修改安全密码

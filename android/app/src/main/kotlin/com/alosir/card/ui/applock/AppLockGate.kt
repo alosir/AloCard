@@ -84,9 +84,9 @@ private fun LockScreen(
     fun promptBiometric() {
         Biometrics.prompt(
             activity = activity,
-            title = "解锁 AloCard",
-            subtitle = "验证指纹以继续使用",
-            negativeText = "使用安全密码",
+            title = "指纹解锁",
+            subtitle = "",
+            negativeText = "用密码",
             onSuccess = {
                 security.unlockSession()
                 onUnlocked()

@@ -10,6 +10,8 @@ import com.alosir.card.domain.bcdToDigits
 import com.alosir.card.domain.expiryToYm
 import com.alosir.card.domain.hexToBytes
 import com.alosir.card.domain.schemeOfAid
+import com.alosir.card.domain.parseAfl
+import com.alosir.card.domain.tlvFind
 
 /**
  * NFC 读取银行卡公开信息（EMV：卡号 PAN + 有效期 + 卡组织）。
@@ -59,6 +61,7 @@ object EmvCardReader {
     private val SELECT_PPSE = hexToBytes("00A404000E325041592E5359532E444446303100")
     private val GET_PAN = hexToBytes("80CA005A00")
     private val GET_EXPIRY = hexToBytes("80CA5F2400")
+    private val GPO_EMPTY_PDOL = hexToBytes("80A8000002830000")
 
     private fun transact(isoDep: IsoDep, command: ByteArray): ByteArray =
         apduData(isoDep.transceive(command))
@@ -85,6 +88,11 @@ object EmvCardReader {
                 }
                 if (scheme != "unknown") break
             }
+
+            // 主路径：GPO + READ RECORD（多数国产卡适用）
+            runCatching { readViaRecords(isoDep, scheme) }.getOrNull()?.let { return it }
+
+            // 兜底：GET DATA（部分卡只支持这种）
             val pan = bcdToDigits(transact(isoDep, GET_PAN))
             require(pan.length in 13..19) { "未读到有效卡号" }
             val ym = expiryToYm(transact(isoDep, GET_EXPIRY))
@@ -92,5 +100,22 @@ object EmvCardReader {
         } finally {
             runCatching { isoDep.close() }
         }
+    }
+
+    /** GPO → AFL → 逐条 READ RECORD，收集 PAN(5A) 与有效期(5F24) */
+    private fun readViaRecords(isoDep: IsoDep, scheme: String): Result? {
+        val afl = parseAfl(transact(isoDep, GPO_EMPTY_PDOL))
+        if (afl.isEmpty()) return null
+        var pan: String? = null
+        var ym: String? = null
+        for ((sfi, first, last) in afl) {
+            for (rec in first..last) {
+                val cmd = byteArrayOf(0x00, 0xB2.toByte(), rec.toByte(), ((sfi shl 3) or 4).toByte(), 0x00)
+                val record = runCatching { transact(isoDep, cmd) }.getOrNull() ?: continue
+                if (pan == null) tlvFind(record, 0x5A)?.let { pan = bcdToDigits(it) }
+                if (ym == null) tlvFind(record, 0x5F24)?.let { ym = expiryToYm(it) }
+            }
+        }
+        return if (pan != null && ym != null) Result(pan, ym, scheme) else null
     }
 }

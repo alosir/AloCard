@@ -40,14 +40,12 @@ object Biometrics {
             },
         )
         runCatching {
-            prompt.authenticate(
-                BiometricPrompt.PromptInfo.Builder()
-                    .setTitle(title)
-                    .setSubtitle(subtitle)
-                    .setNegativeButtonText(negativeText)
-                    .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-                    .build(),
-            )
+            val builder = BiometricPrompt.PromptInfo.Builder()
+                .setTitle(title)
+                .setNegativeButtonText(negativeText)
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+            if (subtitle.isNotBlank()) builder.setSubtitle(subtitle)
+            prompt.authenticate(builder.build())
         }
         // 个别 ROM 弹窗异常时降级为密码输入，不崩溃
     }

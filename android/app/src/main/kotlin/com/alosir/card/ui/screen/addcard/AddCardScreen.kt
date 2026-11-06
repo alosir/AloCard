@@ -63,66 +63,27 @@ fun AddCardScreen(
     cardId: Long?,
     onBack: () -> Unit,
     onSaved: (Long) -> Unit,
+    onScanCard: () -> Unit = {},
     viewModel: AddCardViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val colors = AloCardTheme.colors
 
-    // ---- 卡面 OCR 扫一扫（拍照 → 本机 ML Kit 识别卡号/有效期/银行名） ----
+    // ---- 实时卡面识别（CameraX + ML Kit，识别到即自动回填） ----
     val context = LocalContext.current
-    val scanScope = rememberCoroutineScope()
-    var scanning by remember { mutableStateOf(false) }
-    var pendingScanUri by remember { mutableStateOf<android.net.Uri?>(null) }
-
-    val takePicture = rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.TakePicture()
-    ) { ok ->
-        val uri = pendingScanUri
-        pendingScanUri = null
-        if (ok && uri != null) {
-            scanScope.launch {
-                scanning = true
-                val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    runCatching { CardOcr.recognize(context, uri) }.getOrNull()
-                }
-                scanning = false
-                if (result == null) {
-                    android.widget.Toast.makeText(context, "识别失败，请保持卡面清晰后重试", android.widget.Toast.LENGTH_SHORT).show()
-                } else {
-                    result.cardNumber?.let(viewModel::onCardNumberChange)
-                    result.expiryYm?.let(viewModel::onExpiryChange)
-                    // BIN 未识别到银行时，用 OCR 的银行名兜底
-                    val now = viewModel.ui.value
-                    if (now.bankName.isEmpty() || !now.detectedFromNumber) {
-                        result.bankName?.let(viewModel::onBankNameChange)
-                    }
-                }
+    LaunchedEffect(com.alosir.card.ui.screen.scan.ScanResultBus.lastResult) {
+        val result = com.alosir.card.ui.screen.scan.ScanResultBus.lastResult
+        if (result != null) {
+            com.alosir.card.ui.screen.scan.ScanResultBus.lastResult = null
+            result.cardNumber?.let(viewModel::onCardNumberChange)
+            result.expiryYm?.let(viewModel::onExpiryChange)
+            val now = viewModel.ui.value
+            if (now.bankName.isEmpty() || !now.detectedFromNumber) {
+                result.bankName?.let(viewModel::onBankNameChange)
             }
         }
     }
-    val cameraPermission = rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            val uri = createScanUri(context)
-            pendingScanUri = uri
-            takePicture.launch(uri)
-        } else {
-            android.widget.Toast.makeText(context, "需要相机权限以扫描卡面", android.widget.Toast.LENGTH_SHORT).show()
-        }
-    }
-    val startCardScan: () -> Unit = {
-        if (androidx.core.content.ContextCompat.checkSelfPermission(
-                context, android.Manifest.permission.CAMERA,
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        ) {
-            val uri = createScanUri(context)
-            pendingScanUri = uri
-            takePicture.launch(uri)
-        } else {
-            cameraPermission.launch(android.Manifest.permission.CAMERA)
-        }
-    }
+
 
     // ---- NFC 自动读取（无需点击入口；读到即回填并弹引导浮层） ----
     val activity = context as? android.app.Activity
@@ -249,17 +210,14 @@ fun AddCardScreen(
                         placeholder = "输入即识别银行与卡组织",
                         numeric = true,
                         isError = ui.cardNumberError != null,
-                        supportingText = when {
-                            scanning -> "正在识别卡面…"
-                            else -> ui.cardNumberError ?: ui.cardNumberNote ?: "支持银联 / Visa / Mastercard / JCB · 本地离线识别"
-                        },
+                        supportingText = ui.cardNumberError ?: ui.cardNumberNote ?: "支持银联 / Visa / Mastercard / JCB · 本地离线识别",
                         visualTransformation = com.alosir.card.ui.common.CardNumberVisualTransformation(),
                         trailingIcon = {
                             androidx.compose.material3.Icon(
                                 androidx.compose.material.icons.Icons.Default.PhotoCamera,
                                 contentDescription = "扫一扫识别卡面",
                                 tint = colors.goldText,
-                                modifier = Modifier.clickable { startCardScan() }.padding(8.dp),
+                                modifier = Modifier.clickable { onScanCard() }.padding(8.dp),
                             )
                         },
                     )
@@ -437,10 +395,3 @@ private fun schemeLabel(scheme: String): String = when (scheme) {
 }
 
 /** 扫描照片落在缓存目录，经 FileProvider 共享给相机应用；不入相册、不出设备 */
-private fun createScanUri(context: android.content.Context): android.net.Uri {
-    val file = java.io.File(context.cacheDir, "ocr/card-${System.currentTimeMillis()}.jpg")
-    file.parentFile?.mkdirs()
-    return androidx.core.content.FileProvider.getUriForFile(
-        context, "${context.packageName}.fileprovider", file,
-    )
-}

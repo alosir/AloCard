@@ -27,6 +27,54 @@ fun schemeOfAid(aidHex: String): String = when {
     else -> "unknown"
 }
 
+/** 在 EMV 数据里按 tag 查找 value（支持 1/2 字节 tag 与多字节长度） */
+fun tlvFind(data: ByteArray, tag: Int): ByteArray? {
+    var i = 0
+    while (i + 2 <= data.size) {
+        var t = data[i].toInt() and 0xFF
+        if (t == 0xFF) break
+        var tagLen = 1
+        if (t and 0x1F == 0x1F) {
+            if (i + 2 > data.size) break
+            t = (t shl 8) or (data[i + 1].toInt() and 0xFF)
+            tagLen = 2
+        }
+        i += tagLen
+        if (i >= data.size) break
+        var len = data[i].toInt() and 0xFF
+        i++
+        if (len and 0x80 != 0) {
+            val n = len and 0x7F
+            if (n == 0) break
+            len = 0
+            repeat(n) {
+                if (i >= data.size) return null
+                len = (len shl 8) or (data[i].toInt() and 0xFF)
+                i++
+            }
+        }
+        if (i + len > data.size) return null
+        if (t == tag) return data.copyOfRange(i, i + len)
+        i += len
+    }
+    return null
+}
+
+/** GPO 响应里的 AFL（tag 94）→ (SFI, firstRec, lastRec) 列表 */
+fun parseAfl(data: ByteArray): List<Triple<Int, Int, Int>> {
+    val afl = tlvFind(data, 0x94) ?: return emptyList()
+    val out = mutableListOf<Triple<Int, Int, Int>>()
+    var i = 0
+    while (i + 4 <= afl.size) {
+        val sfi = afl[i].toInt() and 0xFF
+        val first = afl[i + 1].toInt() and 0xFF
+        val last = afl[i + 2].toInt() and 0xFF
+        out.add(Triple(sfi, first, last))
+        i += 4
+    }
+    return out
+}
+
 /** 十六进制字符串 → 字节数组 */
 fun hexToBytes(hex: String): ByteArray {
     val clean = hex.replace(" ", "")

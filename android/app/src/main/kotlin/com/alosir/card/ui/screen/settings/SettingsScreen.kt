@@ -287,8 +287,18 @@ fun SettingsScreen(
             Section {
                 SectionTitle("关于")
                 KeyValueRow("版本", viewModel.versionName)
-                KeyValueRow("包名", "com.alosir.card")
-                KeyValueRow("渠道", "GitHub Release · 仅手动检查更新")
+                SettingsRow(
+                    title = "项目",
+                    hint = "GitHub 开源仓库（系统浏览器打开）",
+                    onClick = {
+                        context.startActivity(
+                            android.content.Intent(
+                                android.content.Intent.ACTION_VIEW,
+                                android.net.Uri.parse("https://github.com/alosir/AloCard"),
+                            )
+                        )
+                    },
+                )
                 SettingsRow(
                     title = "检查更新",
                     hint = updateHint,
@@ -298,10 +308,6 @@ fun SettingsScreen(
                     title = "更新日志",
                     hint = "本版本的更新内容",
                     onClick = { viewModel.loadChangelog(); showChangelog = true },
-                )
-                HintText(
-                    "剩余可用额度为估算值（仅统计已出账账单）；免息期基于手工录入的账单日推算。",
-                    Modifier.padding(top = 4.dp),
                 )
             }
             ui.message?.let {

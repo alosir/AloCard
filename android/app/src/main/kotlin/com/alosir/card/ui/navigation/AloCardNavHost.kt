@@ -135,6 +135,16 @@ fun AloCardNavHost(
                     onVerifyPin = { navController.navigate(Routes.PIN_VERIFY) },
                 )
             }
+            composable(Routes.SCAN) {
+                com.alosir.card.ui.screen.scan.ScanCardScreen(
+                    onBack = { navController.popBackStack() },
+                    onDetected = { result ->
+                        com.alosir.card.ui.screen.scan.ScanResultBus.lastResult = result
+                        navController.popBackStack()
+                    },
+                )
+            }
+
             composable(Routes.PIN_SETUP) {
                 PinScreen(
                     mode = PinMode.SETUP,
@@ -187,6 +197,7 @@ fun AloCardNavHost(
                     cardId = if (cardId > 0) cardId else null,
                     onBack = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() },
+                    onScanCard = { navController.navigate(Routes.SCAN) },
                 )
             }
             composable(
