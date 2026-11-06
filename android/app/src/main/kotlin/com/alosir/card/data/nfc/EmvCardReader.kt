@@ -70,7 +70,10 @@ object EmvCardReader {
         val isoDep = IsoDep.get(tag) ?: error("该卡不支持 NFC 读取")
         isoDep.connect()
         try {
-            transact(isoDep, SELECT_PPSE)
+            // PPSE 失败不阻断：很多国产卡仍可继续读 AID
+            runCatching { transact(isoDep, SELECT_PPSE) }
+                .onFailure { android.util.Log.w("EmvCardReader", "PPSE 失败：${it.message}") }
+
             // 卡组织 AID：银联 QuickPass / Visa / Mastercard 各尝试一次
             val aidCandidates = listOf("A000000333010101", "A0000000031010", "A0000000041010")
             var scheme = "unknown"
@@ -90,7 +93,9 @@ object EmvCardReader {
             }
 
             // 主路径：GPO + READ RECORD（多数国产卡适用）
-            runCatching { readViaRecords(isoDep, scheme) }.getOrNull()?.let { return it }
+            runCatching { readViaRecords(isoDep, scheme) }
+                .onFailure { android.util.Log.w("EmvCardReader", "记录读取失败：${it.message}") }
+                .getOrNull()?.let { return it }
 
             // 兜底：GET DATA（部分卡只支持这种）
             val pan = bcdToDigits(transact(isoDep, GET_PAN))

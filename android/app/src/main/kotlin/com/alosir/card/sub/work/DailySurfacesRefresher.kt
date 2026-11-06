@@ -52,6 +52,36 @@ class DailySurfacesRefresher @Inject constructor(
             },
         )
 
+        // 1b. 最近待还记录小组件：逾期合并一行，其余按天分组汇总
+        data class DueEntry(val dueDays: Int, val outstandingCents: Long)
+        val dueEntries = groups.mapNotNull { group ->
+            val billingDay = group.billingDay ?: return@mapNotNull null
+            val offset = group.dueOffsetDays ?: return@mapNotNull null
+            val dueDays = DateEngine.daysUntilDue(billingDay, offset, today) ?: return@mapNotNull null
+            val outstanding = group.currentBill?.outstandingCents ?: return@mapNotNull null
+            if (outstanding <= 0L) return@mapNotNull null
+            DueEntry(dueDays, outstanding)
+        }
+        val dueRows = buildList {
+            val overdueTotal = dueEntries.filter { it.dueDays < 0 }.sumOf { it.outstandingCents }
+            if (overdueTotal > 0L) {
+                add(com.alosir.card.widget.DueWidgetRow("逾期", overdueTotal))
+            }
+            dueEntries.filter { it.dueDays >= 0 }
+                .groupBy { it.dueDays }
+                .entries
+                .sortedBy { it.key }
+                .forEach { (days, entries) ->
+                    val label = when (days) {
+                        0 -> "今天"
+                        1 -> "明天"
+                        else -> "${days}天后"
+                    }
+                    add(com.alosir.card.widget.DueWidgetRow(label, entries.sumOf { it.outstandingCents }))
+                }
+        }.take(com.alosir.card.widget.DueBillsWidgetReceiver.MAX_ROWS)
+        com.alosir.card.widget.DueBillsWidgetReceiver.render(context, dueRows)
+
         // 2. 常驻通知：有临近到期 → 还款提醒内容；否则 → 免息期建议（DESIGN.md 5.9）
         val dueLines = groups.mapNotNull { group ->
             val billingDay = group.billingDay ?: return@mapNotNull null

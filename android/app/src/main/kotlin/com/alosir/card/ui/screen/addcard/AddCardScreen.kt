@@ -98,7 +98,9 @@ fun AddCardScreen(
                     viewModel.onExpiryChange(res.expiryYm)
                     nfcResult = res
                 },
-                onError = { /* 读取失败保持静默，可改用 OCR/手输 */ },
+                onError = { msg ->
+                    android.widget.Toast.makeText(context, "NFC 读取失败：$msg，可改用拍照识别", android.widget.Toast.LENGTH_SHORT).show()
+                },
             )
         }
         onDispose {

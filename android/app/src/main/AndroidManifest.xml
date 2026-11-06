@@ -53,6 +53,18 @@
                 android:resource="@xml/grace_period_widget_info" />
         </receiver>
 
+        <!-- 最近待还记录小组件（2x2，磨砂圆角） -->
+        <receiver
+            android:name=".widget.DueBillsWidgetReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/grace_period_widget_info" />
+        </receiver>
+
         <!-- 更新 APK 的共享（下载完成后交给系统安装器） -->
         <provider
             android:name="androidx.core.content.FileProvider"

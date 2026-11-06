@@ -106,6 +106,7 @@ fun SettingsScreen(
     }
 
     var showChangelog by remember { mutableStateOf(false) }
+    var showWidgetChooser by remember { mutableStateOf(false) }
 
     // 弹窗日志区高度不超过屏高 2/3（项 2）
     val logMaxHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 2 / 3).dp
@@ -251,6 +252,11 @@ fun SettingsScreen(
             Section {
                 SectionTitle("备份")
                 SettingsRow(
+                    title = "添加小部件",
+                    hint = "桌面 2x2：免息期 TOP5 / 最近待还记录",
+                    onClick = { showWidgetChooser = true },
+                )
+                SettingsRow(
                     title = "导出加密备份",
                     hint = "全部账单组、卡片（含卡号）与账单历史，加密为 .aloc 文件",
                     onClick = {
@@ -320,6 +326,27 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(24.dp))
         }
+    }
+
+    // ---- 添加桌面小部件选择 ----
+    if (showWidgetChooser) {
+        AlertDialog(
+            onDismissRequest = { showWidgetChooser = false },
+            title = { Text("添加桌面小部件") },
+            text = { Text("选择要添加的 2x2 小部件") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showWidgetChooser = false
+                    pinWidget(context, com.alosir.card.widget.GracePeriodWidgetReceiver::class.java)
+                }) { Text("免息期 TOP5") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showWidgetChooser = false
+                    pinWidget(context, com.alosir.card.widget.DueBillsWidgetReceiver::class.java)
+                }) { Text("最近待还记录") }
+            },
+        )
     }
 
     // ---- 更新日志弹层（Markdown → 结构化渲染，不裸显源码） ----
@@ -458,6 +485,26 @@ fun SettingsScreen(
 }
 
 private enum class PinDialog { EXPORT, IMPORT }
+
+/** 一键把小组件添加到桌面；不支持时给出手动添加指引 */
+private fun pinWidget(context: android.content.Context, cls: Class<*>) {
+    val manager = android.appwidget.AppWidgetManager.getInstance(context)
+    val component = android.content.ComponentName(context, cls)
+    runCatching {
+        manager.javaClass.getMethod(
+            "pinAppWidget",
+            android.content.ComponentName::class.java,
+            android.os.Bundle::class.java,
+            Int::class.javaPrimitiveType,
+        ).invoke(manager, component, null, 0)
+    }.onFailure {
+        android.widget.Toast.makeText(
+            context,
+            "当前桌面不支持一键添加，请长按桌面手动添加小部件",
+            android.widget.Toast.LENGTH_LONG,
+        ).show()
+    }
+}
 
 /** 更新日志的结构化渲染：## 版本 → 金色标题；- 条目 → 圆点行；#/引用/空行忽略 */
 @Composable

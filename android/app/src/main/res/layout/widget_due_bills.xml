@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_due_bg"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/due_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="最近待还"
+        android:textColor="#F6E6AD"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:id="@+id/due_rows"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="6dp" />
+</LinearLayout>
