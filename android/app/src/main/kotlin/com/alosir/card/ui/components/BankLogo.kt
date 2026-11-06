@@ -41,6 +41,7 @@ object BankLogos {
         "北京银行" to R.drawable.bank_bob,
         "上海银行" to R.drawable.bank_bosh,
         "南京银行" to R.drawable.bank_njcb,
+        "宁波银行" to R.drawable.bank_nbcb,
         "渤海银行" to R.drawable.bank_bhbank,
         "杭州银行" to R.drawable.bank_hzbank,
     )
