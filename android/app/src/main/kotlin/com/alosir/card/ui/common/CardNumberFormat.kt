@@ -15,8 +15,11 @@ class CardNumberVisualTransformation : VisualTransformation {
     }
 
     private object CardNumberOffsetMapping : OffsetMapping {
-        override fun originalToTransformed(offset: Int): Int = offset + offset / 4
-        override fun transformedToOriginal(offset: Int): Int = offset - offset / 5
+        override fun originalToTransformed(offset: Int): Int =
+            com.alosir.card.domain.cardNumberOriginalToTransformed(offset)
+
+        override fun transformedToOriginal(offset: Int): Int =
+            com.alosir.card.domain.cardNumberTransformedToOriginal(offset)
     }
 }
 
