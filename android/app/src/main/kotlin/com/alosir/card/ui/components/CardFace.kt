@@ -151,7 +151,7 @@ fun BankChip(color: Color, glyph: String, modifier: Modifier = Modifier) {
 fun BankLedgerRow(
     bankName: String,
     subLabel: String,
-    gracePeriodDays: Int?,
+    outstandingCents: Long?,
     dueDays: Int?,
     dueText: String,
     dueSubText: String,
@@ -210,25 +210,32 @@ fun BankLedgerRow(
                 Modifier.fillMaxWidth().padding(top = 6.dp),
                 verticalAlignment = Alignment.Bottom,
             ) {
-                if (gracePeriodDays != null) {
-                    Text(
-                        "$gracePeriodDays",
-                        style = MaterialTheme.typography.displayLarge,
-                        fontSize = 26.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        "天免息",
-                        style = MaterialTheme.typography.labelSmall,
+                // 大数字 = 本期应还金额（替代原免息天数）
+                when {
+                    billState == BillState.PENDING_ENTRY -> Text(
+                        "待录入",
+                        style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp, bottom = 3.dp),
                     )
-                } else {
-                    Text(
-                        "待完善",
+                    outstandingCents == null -> Text(
+                        "未出账",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    else -> {
+                        Text(
+                            com.alosir.card.domain.util.Money.format(outstandingCents),
+                            style = MaterialTheme.typography.displayLarge,
+                            fontSize = 22.sp,
+                            color = colors.goldText,
+                        )
+                        Text(
+                            "本期应还",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 4.dp, bottom = 3.dp),
+                        )
+                    }
                 }
                 Spacer(Modifier.weight(1f))
                 Text(
@@ -242,8 +249,7 @@ fun BankLedgerRow(
                     },
                 )
             }
-            if (gracePeriodDays != null) {
-                CountdownStrip(
+            CountdownStrip(
                     billDate = billDate,
                     dueDate = dueDate,
                     today = today,
@@ -251,7 +257,6 @@ fun BankLedgerRow(
                     overdue = dueState == DueState.OVERDUE,
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
-            }
         }
     }
 }

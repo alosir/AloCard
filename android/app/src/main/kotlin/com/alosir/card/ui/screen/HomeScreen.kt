@@ -280,7 +280,7 @@ fun HomeScreen(
                             bankName = group.bankName,
                             subLabel = if (group.cards.size > 1) "${group.cards.size} 张卡合并出账"
                             else "尾号 ${group.cards.firstOrNull()?.tail ?: "????"}",
-                            gracePeriodDays = group.gracePeriodDays,
+                            outstandingCents = group.billAmountCents?.let { it - group.paidAmountCents },
                             dueDays = group.dueDays,
                             dueText = group.dueText,
                             dueSubText = group.dueSubText,

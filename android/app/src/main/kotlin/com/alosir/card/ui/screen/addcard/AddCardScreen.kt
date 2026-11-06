@@ -37,6 +37,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alosir.card.domain.CardNumberIdentifier
 import com.alosir.card.data.ocr.CardOcr
+import com.alosir.card.data.nfc.EmvCardReader
+import androidx.compose.runtime.DisposableEffect
 import com.alosir.card.domain.util.Money
 import com.alosir.card.ui.common.FilledField
 import com.alosir.card.ui.common.ExpiryField
@@ -119,6 +121,27 @@ fun AddCardScreen(
             takePicture.launch(uri)
         } else {
             cameraPermission.launch(android.Manifest.permission.CAMERA)
+        }
+    }
+
+    // ---- NFC 自动读取（无需点击入口；读到即回填并弹引导浮层） ----
+    val activity = context as? android.app.Activity
+    var nfcResult by remember { mutableStateOf<EmvCardReader.Result?>(null) }
+    DisposableEffect(Unit) {
+        val available = activity != null && EmvCardReader.isNfcAvailable(context)
+        if (available) {
+            EmvCardReader.startListening(
+                activity!!,
+                onResult = { res ->
+                    viewModel.onCardNumberChange(res.cardNumber)
+                    viewModel.onExpiryChange(res.expiryYm)
+                    nfcResult = res
+                },
+                onError = { /* 读取失败保持静默，可改用 OCR/手输 */ },
+            )
+        }
+        onDispose {
+            if (available) EmvCardReader.stopListening(activity!!)
         }
     }
 
@@ -352,6 +375,22 @@ fun AddCardScreen(
             )
             Spacer(Modifier.height(24.dp))
         }
+    }
+
+    // NFC 读取成功后的引导浮层：展示读到的信息并自动回填
+    nfcResult?.let { res ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { nfcResult = null },
+            title = { Text("已读取到卡片信息") },
+            text = {
+                Text("卡号 ${res.cardNumber.chunked(4).joinToString(" ")}\n有效期 ${res.expiryYm}\n已自动填充，银行由卡号识别")
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { nfcResult = null }) {
+                    Text("确定")
+                }
+            },
+        )
     }
 }
 

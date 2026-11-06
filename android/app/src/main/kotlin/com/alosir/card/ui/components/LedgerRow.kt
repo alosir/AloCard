@@ -47,8 +47,10 @@ fun StatusChip(
             Triple(colors.pendingBg, colors.pending, "待录入")
         billState == BillState.PARTIALLY_PAID ->
             Triple(colors.dueBg, colors.due, "部分还款")
+        billState == BillState.DUE_UNPAID ->
+            Triple(colors.dueBg, colors.due, "待还款")
         else ->
-            Triple(colors.pendingBg, colors.pending, "待还款")
+            Triple(colors.pendingBg, colors.pending, "待录入")
     }
 
     Box(

@@ -110,7 +110,7 @@ fun GroupListScreen(
                         BankLedgerRow(
                             bankName = row.bankName,
                             subLabel = if (row.cardCount > 1) "${row.cardCount} 张卡合并出账" else "尾号 ${row.firstTail}",
-                            gracePeriodDays = row.gracePeriodDays,
+                            outstandingCents = row.billAmountCents?.let { it - row.paidAmountCents },
                             dueDays = row.dueDays,
                             dueText = row.dueText,
                             dueSubText = row.dueSubText,
