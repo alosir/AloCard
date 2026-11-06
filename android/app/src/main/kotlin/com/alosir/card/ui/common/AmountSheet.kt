@@ -55,24 +55,17 @@ fun AmountSheetScaffold(
     blockedReason: String? = null,
 ) {
     val colors = AloCardTheme.colors
-    Box(
+    // 直接作为 ModalBottomSheet 的内容：官方容器负责遮罩与贴底，不再自绘遮罩
+    Column(
         Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.35f))
-            .clickable { onDismiss() },
+            .fillMaxWidth()
+            // 弹层高度不超过屏高 92%，内容超出时上部滚动、键盘固定沉底
+            .heightIn(max = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.92f).dp)
+            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+            .background(colors.paperRaised)
+            .navigationBarsPadding()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
     ) {
-        Column(
-            Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                // 弹层高度不超过屏高 92%，内容超出时上部滚动、键盘固定沉底（修复键盘溢出）
-                .heightIn(max = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.92f).dp)
-                .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                .background(colors.paperRaised)
-                .clickable(enabled = false) {} // 阻断遮罩点击穿透
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-        ) {
             Column(Modifier.weight(1f).verticalScroll(androidx.compose.foundation.rememberScrollState())) {
             // 抓取条
             Box(
@@ -152,7 +145,6 @@ fun AmountSheetScaffold(
                 Spacer(Modifier.height(12.dp))
                 AmountKeypad(onKey = { key -> onAmountChange(amountInputFilter(amountText, key)) })
             }
-        }
     }
 }
 

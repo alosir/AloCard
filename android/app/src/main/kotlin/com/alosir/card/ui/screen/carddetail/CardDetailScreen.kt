@@ -89,6 +89,16 @@ fun CardDetailScreen(
                 Icon(Icons.Default.Edit, contentDescription = "编辑账单组", tint = MaterialTheme.colorScheme.onSurface)
             }
         },
+        bottomBar = {
+            // 操作按钮固定悬浮在底部，不随内容滚动（项 2）
+            ActionRow(
+                cancelText = "录入账单金额",
+                onCancel = { showAmountEntry = true },
+                confirmText = "标记还款",
+                onConfirm = { showPaymentMark = true },
+                confirmEnabled = ui.billState != BillState.PENDING_ENTRY,
+            )
+        },
     ) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
             val colors = AloCardTheme.colors
@@ -256,14 +266,7 @@ fun CardDetailScreen(
                 }
             }
 
-            // ---- 操作（打开本页内浮层，不再跳转页面） ----
-            ActionRow(
-                cancelText = "录入账单金额",
-                onCancel = { showAmountEntry = true },
-                confirmText = "标记还款",
-                onConfirm = { showPaymentMark = true },
-                confirmEnabled = ui.billState != BillState.PENDING_ENTRY,
-            )
+            // 操作按钮已上移到 PageScaffold 的固定底栏，不再放在滚动区
         }
     }
 

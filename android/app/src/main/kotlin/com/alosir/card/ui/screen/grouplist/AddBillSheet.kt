@@ -167,23 +167,16 @@ fun AddBillSheet(
     }
     LaunchedEffect(saved) { if (saved) onDismiss() }
 
-    Box(
+    // 直接作为 ModalBottomSheet 的内容：官方容器负责遮罩与贴底，不再自绘遮罩
+    Column(
         Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.35f))
-            .clickable { onDismiss() },
+            .fillMaxWidth()
+            .heightIn(max = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.92f).dp)
+            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+            .background(colors.paperRaised)
+            .navigationBarsPadding()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
     ) {
-        Column(
-            Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .heightIn(max = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.92f).dp)
-                .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                .background(colors.paperRaised)
-                .clickable(enabled = false) {}
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-        ) {
             Column(Modifier.weight(1f).verticalScroll(androidx.compose.foundation.rememberScrollState())) {
             Box(
                 Modifier
@@ -302,7 +295,6 @@ fun AddBillSheet(
                 Spacer(Modifier.height(12.dp))
                 AmountKeypad(onKey = { key -> viewModel.onAmountChange(amountInputFilter(amountText, key)) })
             }
-        }
     }
 }
 }
