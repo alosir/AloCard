@@ -177,15 +177,7 @@ fun AddBillSheet(
             .navigationBarsPadding()
             .padding(horizontal = 20.dp, vertical = 12.dp),
     ) {
-            Column(Modifier.weight(1f).verticalScroll(androidx.compose.foundation.rememberScrollState())) {
-            Box(
-                Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .size(32.dp, 4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(MaterialTheme.colorScheme.outlineVariant),
-            )
-            Spacer(Modifier.height(12.dp))
+            Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("添加账单", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.weight(1f))

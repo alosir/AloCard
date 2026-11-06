@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -74,6 +75,20 @@ fun GroupDetailScreen(
     // 录入/还款改为本页内浮层，详情页留在原地不划出（项 3）
     var showAmountEntry by remember { mutableStateOf(false) }
     var showPaymentMark by remember { mutableStateOf(false) }
+
+    // 金额浮窗允许截屏（不含完整卡号）；关闭后恢复详情页卡号保护
+    val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
+    LaunchedEffect(showAmountEntry, showPaymentMark) {
+        val window = activity?.window ?: return@LaunchedEffect
+        if (showAmountEntry || showPaymentMark) {
+            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        } else {
+            window.setFlags(
+                android.view.WindowManager.LayoutParams.FLAG_SECURE,
+                android.view.WindowManager.LayoutParams.FLAG_SECURE,
+            )
+        }
+    }
 
     if (ui.deleted) {
         androidx.compose.runtime.LaunchedEffect(Unit) { onDeleted() }
