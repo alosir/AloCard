@@ -15,13 +15,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.alosir.card.ui.screen.HomeScreen
 import com.alosir.card.ui.screen.addcard.AddCardScreen
-import com.alosir.card.ui.screen.amountentry.AmountEntryScreen
 import com.alosir.card.ui.screen.billhistory.BillHistoryScreen
 import com.alosir.card.ui.screen.carddetail.CardDetailScreen
 import com.alosir.card.ui.screen.groupdetail.GroupDetailScreen
 import com.alosir.card.ui.screen.groupform.GroupFormScreen
 import com.alosir.card.ui.screen.grouplist.GroupListScreen
-import com.alosir.card.ui.screen.paymentmark.PaymentMarkScreen
 import com.alosir.card.ui.screen.pin.PinMode
 import com.alosir.card.ui.screen.pin.PinScreen
 import com.alosir.card.ui.screen.quotadetail.QuotaDetailScreen
@@ -171,8 +169,6 @@ fun AloCardNavHost(
                     groupId = groupId,
                     onBack = { navController.popBackStack() },
                     onEditGroup = { navController.navigate(Routes.groupForm(it)) },
-                    onEntry = { navController.navigate(Routes.amountEntry(it)) },
-                    onPay = { navController.navigate(Routes.paymentMark(it)) },
                     onEditCard = { navController.navigate("${Routes.ADD_CARD}?cardId=$it") },
                     onPinRequired = { navController.navigate(Routes.PIN_VERIFY) },
                 )
@@ -205,8 +201,6 @@ fun AloCardNavHost(
                     onHistory = { navController.navigate(Routes.billHistory(it)) },
                     onDeleted = { navController.popBackStack() },
                     onEditCard = { navController.navigate("${Routes.ADD_CARD}?cardId=$it") },
-                    onAmountEntry = { navController.navigate(Routes.amountEntry(it)) },
-                    onPaymentMark = { navController.navigate(Routes.paymentMark(it)) },
                 )
             }
             composable(
@@ -234,65 +228,6 @@ fun AloCardNavHost(
                 BillHistoryScreen(
                     groupId = groupId,
                     onBack = { navController.popBackStack() },
-                )
-            }
-            composable(
-                Routes.AMOUNT_ENTRY,
-                arguments = listOf(navArgument("groupId") { type = NavType.LongType }),
-                // 浮层：从底部向上滑入，关闭向下滑出
-                enterTransition = {
-                    androidx.compose.animation.slideInVertically(
-                        initialOffsetY = { it },
-                        animationSpec = androidx.compose.animation.core.tween(240),
-                    )
-                },
-                exitTransition = {
-                    androidx.compose.animation.slideOutVertically(
-                        targetOffsetY = { it },
-                        animationSpec = androidx.compose.animation.core.tween(240),
-                    )
-                },
-                popExitTransition = {
-                    androidx.compose.animation.slideOutVertically(
-                        targetOffsetY = { it },
-                        animationSpec = androidx.compose.animation.core.tween(240),
-                    )
-                },
-            ) { entry ->
-                val groupId = entry.arguments?.getLong("groupId") ?: -1L
-                AmountEntryScreen(
-                    groupId = groupId,
-                    onBack = { navController.popBackStack() },
-                    onSaved = { navController.popBackStack() },
-                )
-            }
-            composable(
-                Routes.PAYMENT_MARK,
-                arguments = listOf(navArgument("groupId") { type = NavType.LongType }),
-                enterTransition = {
-                    androidx.compose.animation.slideInVertically(
-                        initialOffsetY = { it },
-                        animationSpec = androidx.compose.animation.core.tween(240),
-                    )
-                },
-                exitTransition = {
-                    androidx.compose.animation.slideOutVertically(
-                        targetOffsetY = { it },
-                        animationSpec = androidx.compose.animation.core.tween(240),
-                    )
-                },
-                popExitTransition = {
-                    androidx.compose.animation.slideOutVertically(
-                        targetOffsetY = { it },
-                        animationSpec = androidx.compose.animation.core.tween(240),
-                    )
-                },
-            ) { entry ->
-                val groupId = entry.arguments?.getLong("groupId") ?: -1L
-                PaymentMarkScreen(
-                    groupId = groupId,
-                    onBack = { navController.popBackStack() },
-                    onSaved = { navController.popBackStack() },
                 )
             }
         }

@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -63,12 +65,15 @@ fun AmountSheetScaffold(
             Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
+                // 弹层高度不超过屏高 92%，内容超出时上部滚动、键盘固定沉底（修复键盘溢出）
+                .heightIn(max = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.92f).dp)
                 .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                 .background(colors.paperRaised)
                 .clickable(enabled = false) {} // 阻断遮罩点击穿透
                 .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 12.dp),
         ) {
+            Column(Modifier.weight(1f).verticalScroll(androidx.compose.foundation.rememberScrollState())) {
             // 抓取条
             Box(
                 Modifier
@@ -142,8 +147,11 @@ fun AmountSheetScaffold(
                 TonalButton("取消", onDismiss, Modifier.weight(1f))
                 FilledButton(confirmText, onConfirm, Modifier.weight(2f), confirmEnabled)
             }
-            Spacer(Modifier.height(12.dp))
-            AmountKeypad(onKey = { key -> onAmountChange(amountInputFilter(amountText, key)) })
+            }
+            if (blockedReason == null) {
+                Spacer(Modifier.height(12.dp))
+                AmountKeypad(onKey = { key -> onAmountChange(amountInputFilter(amountText, key)) })
+            }
         }
     }
 }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.focus.onFocusChanged
@@ -167,12 +168,14 @@ fun AddBillSheet(
             Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
+                .heightIn(max = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.92f).dp)
                 .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                 .background(colors.paperRaised)
                 .clickable(enabled = false) {}
                 .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 12.dp),
         ) {
+            Column(Modifier.weight(1f).verticalScroll(androidx.compose.foundation.rememberScrollState())) {
             Box(
                 Modifier
                     .align(Alignment.CenterHorizontally)
@@ -285,9 +288,12 @@ fun AddBillSheet(
                         enabled = !saving && amountText.isNotBlank(),
                     )
                 }
+            }
+            if (candidates.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 AmountKeypad(onKey = { key -> viewModel.onAmountChange(amountInputFilter(amountText, key)) })
             }
         }
     }
+}
 }

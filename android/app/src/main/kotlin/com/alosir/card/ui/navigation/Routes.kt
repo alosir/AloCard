@@ -18,9 +18,7 @@ object Routes {
     const val GROUP_FORM = "group/form?groupId={groupId}" // P4 新建/编辑账单组
     const val BILL_HISTORY = "history/{groupId}" // P6 账单历史
 
-    // 金额操作
-    const val AMOUNT_ENTRY = "entry/{groupId}"   // P8 录入账单金额
-    const val PAYMENT_MARK = "pay/{groupId}"     // P9 标记还款
+    // 金额操作已改为详情页内浮层（SlideUpSheet），不再使用独立路由
 
     // 安全
     const val PIN_SETUP = "pin/setup"            // P10 设置安全密码
@@ -32,6 +30,4 @@ object Routes {
     fun groupForm(groupId: Long? = null) =
         if (groupId == null) "group/form?groupId=-1" else "group/form?groupId=$groupId"
     fun billHistory(groupId: Long) = "history/$groupId"
-    fun amountEntry(groupId: Long) = "entry/$groupId"
-    fun paymentMark(groupId: Long) = "pay/$groupId"
 }

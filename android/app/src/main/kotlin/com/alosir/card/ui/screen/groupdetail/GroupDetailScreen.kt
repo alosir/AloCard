@@ -26,6 +26,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,13 +66,14 @@ fun GroupDetailScreen(
     onHistory: (Long) -> Unit,
     onDeleted: () -> Unit,
     onEditCard: (Long) -> Unit,
-    onAmountEntry: (Long) -> Unit,
-    onPaymentMark: (Long) -> Unit,
     viewModel: GroupDetailViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.uiState(groupId).collectAsStateWithLifecycle()
     val group = ui.group
     val colors = AloCardTheme.colors
+    // 录入/还款改为本页内浮层，详情页留在原地不划出（项 3）
+    var showAmountEntry by remember { mutableStateOf(false) }
+    var showPaymentMark by remember { mutableStateOf(false) }
 
     if (ui.deleted) {
         androidx.compose.runtime.LaunchedEffect(Unit) { onDeleted() }
@@ -225,8 +229,8 @@ fun GroupDetailScreen(
                     Modifier.fillMaxWidth().padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    TonalButton("录入 / 修改账单", { onAmountEntry(group.id) }, Modifier.weight(1f))
-                    FilledButton("标记还款", { onPaymentMark(group.id) }, Modifier.weight(1.4f))
+                    TonalButton("录入 / 修改账单", { showAmountEntry = true }, Modifier.weight(1f))
+                    FilledButton("标记还款", { showPaymentMark = true }, Modifier.weight(1.4f))
                 }
                 Spacer(Modifier.height(24.dp))
             }
@@ -247,5 +251,24 @@ fun GroupDetailScreen(
                 TextButton(onClick = { viewModel.dismissDeleteConfirm() }) { Text("取消") }
             },
         )
+    }
+
+    if (showAmountEntry) {
+        com.alosir.card.ui.common.SlideUpSheet(onDismiss = { showAmountEntry = false }) {
+            com.alosir.card.ui.screen.amountentry.AmountEntryScreen(
+                groupId = groupId,
+                onBack = { showAmountEntry = false },
+                onSaved = { showAmountEntry = false },
+            )
+        }
+    }
+    if (showPaymentMark) {
+        com.alosir.card.ui.common.SlideUpSheet(onDismiss = { showPaymentMark = false }) {
+            com.alosir.card.ui.screen.paymentmark.PaymentMarkScreen(
+                groupId = groupId,
+                onBack = { showPaymentMark = false },
+                onSaved = { showPaymentMark = false },
+            )
+        }
     }
 }
