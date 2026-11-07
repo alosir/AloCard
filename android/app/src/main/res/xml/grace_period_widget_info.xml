@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  今日免息期小组件（ADR-0012）。
-  targetCellWidth/Height 用 4x2：5 行列表在常见小组件尺寸里排得下。
+  今日免息期小组件。
+  targetCellWidth/Height 固定为 2x2，内容使用双列网格。
   updatePeriodMillis 设为 0——刷新由 App 主动触发（每日 0 点 + 每次打开），
   不依赖系统的 30 分钟最小轮询间隔。
 -->

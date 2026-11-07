@@ -13,6 +13,7 @@
     <!-- 桌面小组件 -->
     <string name="widget_title">今日免息期</string>
     <string name="widget_desc">展示当天免息期最长的 5 个账单组</string>
+    <string name="widget_due_desc">展示本期剩余待还金额与最近待还记录</string>
 
     <!-- 空状态 -->
     <string name="empty_title">还没有卡片</string>
