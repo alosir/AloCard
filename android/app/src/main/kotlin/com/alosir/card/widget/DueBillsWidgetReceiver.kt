@@ -18,9 +18,9 @@ import dagger.hilt.components.SingletonComponent
 data class DueWidgetRow(val label: String, val amountCents: Long, val groupId: Long)
 
 /**
- * 最近待还记录小组件（2x2）。
- * 逾期合并为一行；后续按今天/明天/N天后分组，显示剩余待还金额。
- * 深空灰半透明磨砂圆角矩形背景，点击打开 App。
+ * 最近待还记录小组件（4x2）。
+ * 每个账单组一行，按逾期与还款日排序，显示剩余待还金额。
+ * 深金渐变圆角背景，每条记录可点击进入对应账单详情。
  */
 class DueBillsWidgetReceiver : AppWidgetProvider() {
 
