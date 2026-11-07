@@ -50,10 +50,10 @@ android/keystore/alocard-release.keystore
 
 | 层 | 状态 | 说明 |
 | --- | --- | --- |
-| `domain` | ✅ 编译通过 + 35 项测试 | 日期引擎、卡号识别、模型、仓库接口、Money/DateProvider |
+| `domain` | ✅ 编译通过 + JVM 测试 | 日期引擎、卡号识别、OCR 文本解析、组件尺寸计算、模型、仓库接口、Money/DateProvider |
 | `data` | ✅ 编译通过 | Room 5 表、DAO（含覆盖式/累计式/撤销事务）、Repository、AES-GCM+HMAC 卡号加密、PIN（PBKDF2 12 万迭代 + 5 次锁定递增）、离线 BIN 查表、加密备份 |
 | `ui` | ✅ 编译通过 | 主题（浅色/深色独立配色）、账簿行/格带/索引标签组件、P1–P11+P14 全部页面、底部导航、PIN 键盘 |
-| 提醒/信息位 | ✅ | WorkManager 自续期（09:00 扫描 + 00:05 刷新）、通知幂等台账、4 通知渠道、常驻通知（ongoing，TOP3/逾期两种内容）、RemoteViews 小组件 TOP5、通知权限缺失提示条 |
+| 提醒/信息位 | ✅ | WorkManager 自续期（09:00 扫描 + 00:05 刷新）、通知幂等台账、4 通知渠道、常驻通知（ongoing，TOP3/逾期两种内容）、RemoteViews 自适应小组件、通知权限缺失提示条 |
 | 安全 | ✅ | 应用锁（生物识别或 PIN，后台 5 分钟超时）、查看卡号 PIN 闸门（同组共享会话）、卡片详情/PIN 页 FLAG_SECURE、加密备份导出/恢复（PBKDF2 60 万 + AES-GCM，SAF，恢复前快照） |
 
 ## 目录结构
@@ -86,7 +86,7 @@ android/
         │   ├── sub/
         │   │   ├── notification/          渠道 + AppNotifier（构造与发送）
         │   │   └── work/                  DailyReminderWorker / DailyRefreshWorker / 调度编排 / 信息位刷新
-        │   ├── widget/                    RemoteViews 小组件（TOP5）
+        │   ├── widget/                    RemoteViews 小组件（按尺寸自适应）
         │   ├── ui/
         │   │   ├── theme/                 色彩/字阶/形状令牌 + AloCardTheme
         │   │   ├── components/            LedgerRow / CountdownStrip / WashiTab / 总览条 / 分段控件
@@ -104,7 +104,7 @@ android/
 | --- | --- | --- | --- |
 | 联网 | C1/ADR-0013：不出网 | 例外：`INTERNET` 仅用于检查 GitHub 更新并下载 APK | 用户指令（2026-11-02），优先于 ADR 字面条文；银行连接/账号/云同步仍明确不做 |
 | 模块结构 | `:domain`（纯 JVM）+ `:app` 双模块 | 单 `:app` 模块，包内分层 | 引擎隔离的目标（防误用 Android API + JVM 测试）已由 `run-jvm-tests.js` harness 达成；双模块的收益不抵构建复杂度 |
-| 小组件 | Glance 1.2.0 | RemoteViews | 规范自身的 Plan B；规避 Glance 与 Compose Runtime 的版本耦合；5 行静态文本不需要声明式能力 |
+| 小组件 | Glance 1.2.0 | RemoteViews | 规范自身的 Plan B；规避 Glance 与 Compose Runtime 的版本耦合；RemoteViews 可满足静态文本与尺寸自适应需求 |
 | 安全凭据存储 | Room `security_credentials` 表 | EncryptedSharedPreferences | SecurityManager 已完整实现 PBKDF2+锁定+会话且可导出凭据供备份；表形式属重复建设 |
 | 列表页内存映射 | —（仅额度聚合强制 SQL） | 组×卡×账单在内存合并，SUM 走 QuotaDao | 组数规模下内存合并无性能问题；额度汇总遵守 PRD 9.5 走 SQL |
 | 历史逾期 N 口径 | 「历史按当时 N」 | 用当前 N 判定 | 引擎未存历史 N；改 N 不追溯历史（F2.4）下两种口径差异实际不可观测 |

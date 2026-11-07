@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 待还行：银行徽标 + 银行名 · 状态 + 金额 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/due_row_root"
     android:layout_width="match_parent"
@@ -9,15 +8,11 @@
     android:paddingTop="5dp"
     android:paddingBottom="5dp">
 
-    <TextView
-        android:id="@+id/due_mark"
+    <ImageView
+        android:id="@+id/due_logo"
         android:layout_width="20dp"
         android:layout_height="20dp"
-        android:gravity="center"
-        android:background="@drawable/widget_mark_bg"
-        android:textColor="#211D18"
-        android:textSize="8sp"
-        android:textStyle="bold" />
+        android:scaleType="fitCenter" />
 
     <TextView
         android:id="@+id/due_label"

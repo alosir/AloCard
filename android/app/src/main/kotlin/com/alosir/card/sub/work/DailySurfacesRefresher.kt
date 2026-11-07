@@ -18,7 +18,7 @@ import javax.inject.Singleton
 
 /**
  * 每日信息位刷新（PRD F7.5 / ADR-0012）：
- * 同一份「今日 TOP 账单组」数据，渲染成小组件（5 行）与常驻通知（3 行），
+ * 同一份「今日免息期排序」数据，小组件按尺寸展示，常驻通知展示前 3 行，
  * 保证两个被动信息位口径一致。
  *
  * 刷新时机：每日 00:05（DailyRefreshWorker）+ 每次 App 打开/回前台。
@@ -34,7 +34,7 @@ class DailySurfacesRefresher @Inject constructor(
         val groups = billingGroups.observeGroupsWithCards().first()
         val today = DateProvider.today()
 
-        // 今日免息期降序 TOP5（待完善组不参与，PRD F7.5 规则 8）
+        // 全部可用组按今日免息期降序；实际展示数量由每个组件的尺寸决定
         val ranked = groups
             .filter { it.billingDay != null && it.dueOffsetDays != null }
             .map { group ->
@@ -42,17 +42,13 @@ class DailySurfacesRefresher @Inject constructor(
             }
             .filter { it.second != null }
             .sortedByDescending { it.second }
-            .take(5)
 
-        // 1. 桌面小组件（RemoteViews，静态渲染入口在 Receiver）
         GracePeriodWidgetReceiver.render(
             context,
-            ranked.mapIndexed { index, (group, days) ->
-                WidgetRow(rank = index + 1, bankName = group.name, days = days, highlight = index == 0)
-            },
+            ranked.map { (group, days) -> WidgetRow(bankName = group.name, days = days) },
         )
 
-        // 1b. 最近待还记录小组件：每组一行（银行名-逾期/今天/明天/后天/N天后），点击进详情
+        // 每组一行；总额、笔数保留全部已录入且未还清账单的口径
         data class DueEntry(val dueDays: Int, val outstandingCents: Long, val groupId: Long, val bankName: String)
         val dueEntries = groups.mapNotNull { group ->
             val billingDay = group.billingDay ?: return@mapNotNull null
@@ -66,15 +62,19 @@ class DailySurfacesRefresher @Inject constructor(
             .sortedWith(compareBy({ if (it.dueDays < 0) 0 else 1 }, { it.dueDays }))
             .map { entry ->
                 val label = when {
-                    entry.dueDays < 0 -> "${entry.bankName} · 逾期"
-                    entry.dueDays == 0 -> "${entry.bankName} · 今天"
-                    entry.dueDays == 1 -> "${entry.bankName} · 明天"
-                    entry.dueDays == 2 -> "${entry.bankName} · 后天"
-                    else -> "${entry.bankName} · ${entry.dueDays}天后"
+                    entry.dueDays < 0 -> "逾期"
+                    entry.dueDays == 0 -> "今天"
+                    entry.dueDays == 1 -> "明天"
+                    entry.dueDays == 2 -> "后天"
+                    else -> "${entry.dueDays}天后"
                 }
-                com.alosir.card.widget.DueWidgetRow(label, entry.outstandingCents, entry.groupId)
+                com.alosir.card.widget.DueWidgetRow(
+                    bankName = entry.bankName,
+                    label = "${entry.bankName} · $label",
+                    amountCents = entry.outstandingCents,
+                    groupId = entry.groupId,
+                )
             }
-            .take(com.alosir.card.widget.DueBillsWidgetReceiver.MAX_ROWS)
         com.alosir.card.widget.DueBillsWidgetReceiver.render(
             context,
             dueRows,

@@ -58,7 +58,7 @@ if [ -n "${GITHUB_TOKEN:-}" ]; then
     -H "Content-Type: application/json" \
     -d "$PAYLOAD" \
     https://api.github.com/repos/alosir/AloCard/releases | grep -o '"id": *[0-9]*' | head -1 | grep -o '[0-9]*')
-  curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
+  curl --http1.1 -fS -H "Expect:" -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
     -H "Content-Type: application/vnd.android.package-archive" \
     --data-binary @"$APK_OUT" \
     "https://uploads.github.com/repos/alosir/AloCard/releases/${RELEASE_ID}/assets?name=AloCard-${TAG}.apk" \

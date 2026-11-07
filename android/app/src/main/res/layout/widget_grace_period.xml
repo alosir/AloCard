@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 今日免息期小组件（2x2）：白卡 + 双列网格 + 页脚 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_background"
+    android:background="@drawable/widget_due_bg"
     android:orientation="vertical"
-    android:padding="12dp">
+    android:padding="10dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -20,19 +19,20 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/widget_title"
-            android:textSize="14sp"
+            android:textColor="#F5E2B4"
+            android:textSize="13sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/widget_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/widget_date_bg"
+            android:background="@drawable/widget_pill_bg"
             android:paddingLeft="6dp"
             android:paddingRight="6dp"
-            android:paddingTop="3dp"
-            android:paddingBottom="3dp"
-            android:textColor="#827C73"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:textColor="#E6C783"
             android:textSize="9sp"
             tools:text="10/24" />
     </LinearLayout>
@@ -40,21 +40,16 @@
     <LinearLayout
         android:id="@+id/widget_rows"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginTop="6dp" />
-
-    <TextView
-        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginTop="4dp" />
 
     <TextView
         android:id="@+id/widget_footer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingTop="7dp"
-        android:textColor="#8E6B36"
-        android:textSize="10sp"
-        android:textStyle="bold" />
+        android:paddingTop="4dp"
+        android:textColor="#E6C783"
+        android:textSize="9sp" />
 </LinearLayout>

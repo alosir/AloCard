@@ -1,8 +1,8 @@
 package com.alosir.card.ui.screen.scan
 
+import android.os.Handler
 import android.util.Log
 import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
@@ -37,9 +37,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.alosir.card.data.ocr.CardOcr
 import com.alosir.card.ui.theme.AloCardTheme
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import java.util.concurrent.Executors
 
 object ScanResultBus {
     var lastResult: CardOcr.Result? = null
@@ -53,49 +51,55 @@ fun ScanCardScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
-    val capture = remember { ImageCapture.Builder().build() }
-    val recognizer = remember { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
+    val capture = remember {
+        ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+            .build()
+    }
+    val ocrExecutor = remember { Executors.newSingleThreadExecutor() }
+    val mainHandler = remember { Handler(context.mainLooper) }
     val colors = AloCardTheme.colors
-    var detected by remember { mutableStateOf(false) }
     var capturing by remember { mutableStateOf(false) }
     var done by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf("正在识别…，也可手动拍照") }
+    var status by remember { mutableStateOf("对准卡片后点击拍照识别") }
 
     fun captureStill() {
         if (done || capturing) return
         capturing = true
-        status = "正在拍照识别…"
+        status = "正在拍照并进行 OCR…"
         capture.takePicture(
             ContextCompat.getMainExecutor(context),
             object : ImageCapture.OnImageCapturedCallback() {
                 override fun onCaptureSuccess(image: ImageProxy) {
-                    val media = image.image
-                    if (media == null) {
-                        image.close()
-                        capturing = false
-                        status = "拍照失败，请重试"
-                        return
-                    }
-                    val still = InputImage.fromMediaImage(media, image.imageInfo.rotationDegrees)
-                    recognizer.process(still)
-                        .addOnSuccessListener { text ->
-                            val result = CardOcr.parse(text.text)
-                            if (!done && result.cardNumber != null && result.expiryYm != null) {
+                    val rotation = image.imageInfo.rotationDegrees
+                    ocrExecutor.execute {
+                        val result = try {
+                            CardOcr.recognize(image.toBitmap(), rotation)
+                        } catch (error: Exception) {
+                            Log.w(TAG, "静态照片 OCR 失败", error)
+                            null
+                        } finally {
+                            image.close()
+                        }
+                        mainHandler.post {
+                            capturing = false
+                            if (!done && result?.cardNumber != null && result.expiryYm != null) {
                                 done = true
-                                detected = true
                                 status = "已识别，正在回填…"
                                 onDetected(result)
                             } else if (!done) {
-                                status = "未识别完整，请对准卡片后重试"
+                                status = if (result == null) {
+                                    "识别失败，请重新拍照"
+                                } else when {
+                                    result.cardNumber == null && result.expiryYm == null ->
+                                        "未识别完整，请对准卡片后重拍"
+                                    result.cardNumber == null ->
+                                        "卡号未通过校验，请重新拍照"
+                                    else -> "未识别有效期，请重新拍照"
+                                }
                             }
-                            capturing = false
                         }
-                        .addOnFailureListener { error ->
-                            Log.w(TAG, "静态照片 OCR 失败", error)
-                            capturing = false
-                            status = "识别失败，请重试"
-                        }
-                        .addOnCompleteListener { image.close() }
+                    }
                 }
 
                 override fun onError(exception: ImageCaptureException) {
@@ -147,7 +151,7 @@ fun ScanCardScreen(
             Text(
                 status,
                 style = MaterialTheme.typography.labelLarge,
-                color = if (detected) colors.goldText else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (done) colors.goldText else MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Button(
                 onClick = { captureStill() },
@@ -160,37 +164,16 @@ fun ScanCardScreen(
     }
 
     LaunchedEffect(Unit) {
-        val analyzer = ImageAnalysis.Analyzer { imageProxy ->
-            val mediaImage = imageProxy.image
-            if (mediaImage == null || done || capturing) {
-                imageProxy.close()
-                return@Analyzer
-            }
-            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-            recognizer.process(image)
-                .addOnSuccessListener { visionText ->
-                    if (!done && !capturing && visionText.text.isNotBlank()) {
-                        captureStill()
-                    }
-                }
-                .addOnCompleteListener { imageProxy.close() }
-        }
-
         try {
             val cameraProvider = ProcessCameraProvider.getInstance(context).get()
             val preview = Preview.Builder().build().also {
                 it.setSurfaceProvider(previewView.surfaceProvider)
             }
-            val analysis = ImageAnalysis.Builder()
-                .setTargetResolution(android.util.Size(1280, 720))
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-                .also { it.setAnalyzer(ContextCompat.getMainExecutor(context), analyzer) }
             cameraProvider.unbindAll()
             cameraProvider.bindToLifecycle(
                 lifecycleOwner,
                 CameraSelector.DEFAULT_BACK_CAMERA,
-                preview, analysis, capture,
+                preview, capture,
             )
         } catch (error: Exception) {
             Log.e(TAG, "相机启动失败", error)
@@ -199,7 +182,7 @@ fun ScanCardScreen(
     }
 
     DisposableEffect(Unit) {
-        onDispose { recognizer.close() }
+        onDispose { ocrExecutor.shutdown() }
     }
 }
 
