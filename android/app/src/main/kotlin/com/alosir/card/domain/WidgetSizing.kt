@@ -1,10 +1,11 @@
 package com.alosir.card.domain
 
 object WidgetSizing {
+    fun graceColumnCount(widthCells: Int): Int = widthCells.coerceAtLeast(1)
+
     fun graceItemLimit(widthCells: Int, heightCells: Int): Int {
-        val width = widthCells.coerceAtLeast(1)
         val verticalSteps = (heightCells.coerceAtLeast(1) + 1) / 2
-        return width * 3 * verticalSteps
+        return graceColumnCount(widthCells) * 3 * verticalSteps
     }
 
     fun dueItemLimit(heightCells: Int): Int =

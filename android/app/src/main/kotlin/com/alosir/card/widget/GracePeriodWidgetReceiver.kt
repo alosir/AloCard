@@ -64,23 +64,28 @@ class GracePeriodWidgetReceiver : AppWidgetProvider() {
                     options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 140)
                 )
                 val limit = WidgetSizing.graceItemLimit(widthCells, heightCells)
-                manager.updateAppWidget(id, buildViews(context, rows, limit))
+                manager.updateAppWidget(id, buildViews(context, rows, limit, widthCells))
             }
         }
 
-        private fun buildViews(context: Context, rows: List<WidgetRow>, limit: Int): RemoteViews {
+        private fun buildViews(
+            context: Context,
+            rows: List<WidgetRow>,
+            limit: Int,
+            columns: Int,
+        ): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_grace_period)
             views.setTextViewText(R.id.widget_title, context.getString(R.string.widget_title))
             views.setTextViewText(R.id.widget_date, LocalDate.now().format(DATE_FMT))
             views.removeAllViews(R.id.widget_rows)
-            rows.take(limit).chunked(2).forEach { pair ->
+            rows.take(limit).chunked(columns).forEach { rowItems ->
                 val row = RemoteViews(context.packageName, R.layout.widget_grace_period_row)
-                pair.forEachIndexed { index, item ->
+                rowItems.forEach { item ->
                     val cell = RemoteViews(context.packageName, R.layout.widget_grace_period_cell).apply {
                         setTextViewText(R.id.cell_bank, item.bankName)
                         setTextViewText(R.id.cell_days, item.days?.toString() ?: "—")
                     }
-                    row.addView(if (index == 0) R.id.cell_left else R.id.cell_right, cell)
+                    row.addView(R.id.row_root, cell)
                 }
                 views.addView(R.id.widget_rows, row)
             }

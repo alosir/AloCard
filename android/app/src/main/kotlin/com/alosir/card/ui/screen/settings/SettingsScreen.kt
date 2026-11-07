@@ -333,18 +333,17 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { showWidgetChooser = false },
             title = { Text("添加桌面小部件") },
-            text = { Text("选择要添加的 2x2 小部件") },
             confirmButton = {
                 TextButton(onClick = {
                     showWidgetChooser = false
                     pinWidget(context, com.alosir.card.widget.GracePeriodWidgetReceiver::class.java)
-                }) { Text("免息期 TOP5") }
+                }) { Text("今日免息期") }
             },
             dismissButton = {
                 TextButton(onClick = {
                     showWidgetChooser = false
                     pinWidget(context, com.alosir.card.widget.DueBillsWidgetReceiver::class.java)
-                }) { Text("最近待还记录") }
+                }) { Text("近期待还") }
             },
         )
     }

@@ -6,7 +6,14 @@ import org.junit.Test
 class WidgetSizingTest {
 
     @Test
-    fun `免息期按横向格数每行展示三列内容`() {
+    fun `免息期列数与桌面横向格数一致`() {
+        assertEquals(2, WidgetSizing.graceColumnCount(widthCells = 2))
+        assertEquals(3, WidgetSizing.graceColumnCount(widthCells = 3))
+        assertEquals(4, WidgetSizing.graceColumnCount(widthCells = 4))
+    }
+
+    @Test
+    fun `免息期展示数量等于列数乘三行`() {
         assertEquals(6, WidgetSizing.graceItemLimit(widthCells = 2, heightCells = 2))
         assertEquals(9, WidgetSizing.graceItemLimit(widthCells = 3, heightCells = 2))
         assertEquals(12, WidgetSizing.graceItemLimit(widthCells = 4, heightCells = 2))
