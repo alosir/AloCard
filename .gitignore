@@ -33,7 +33,9 @@ releases/
 prototype/
 .prototype-work/
 
-# ---- 系统杂物 ----
+# ---- 系统与崩溃杂物 ----
+replay_pid*.log
+hs_err_pid*.log
 Thumbs.db
 .DS_Store
 desktop.ini
