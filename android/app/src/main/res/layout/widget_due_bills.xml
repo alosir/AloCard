@@ -59,7 +59,7 @@
             android:textSize="10sp" />
     </LinearLayout>
 
-    <View
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="#1FFFFFFF" />
@@ -71,7 +71,7 @@
         android:orientation="vertical"
         android:layout_marginTop="3dp" />
 
-    <View
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />

@@ -1,5 +1,6 @@
 package com.alosir.card.ui.screen.scan
 
+import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
@@ -11,14 +12,17 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,15 +41,10 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 
-/** 扫描结果总线：实时识别到卡号+有效期后回传添加卡片页 */
 object ScanResultBus {
     var lastResult: CardOcr.Result? = null
 }
 
-/**
- * 实时卡面识别：CameraX 预览 + ML Kit 文字识别。
- * 取景框引导 + 「正在识别…」状态；识别到卡号与有效期后自动关闭并回填。
- */
 @Composable
 fun ScanCardScreen(
     onBack: () -> Unit,
@@ -54,8 +53,59 @@ fun ScanCardScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
+    val capture = remember { ImageCapture.Builder().build() }
+    val recognizer = remember { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
     val colors = AloCardTheme.colors
     var detected by remember { mutableStateOf(false) }
+    var capturing by remember { mutableStateOf(false) }
+    var done by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf("正在识别…，也可手动拍照") }
+
+    fun captureStill() {
+        if (done || capturing) return
+        capturing = true
+        status = "正在拍照识别…"
+        capture.takePicture(
+            ContextCompat.getMainExecutor(context),
+            object : ImageCapture.OnImageCapturedCallback() {
+                override fun onCaptureSuccess(image: ImageProxy) {
+                    val media = image.image
+                    if (media == null) {
+                        image.close()
+                        capturing = false
+                        status = "拍照失败，请重试"
+                        return
+                    }
+                    val still = InputImage.fromMediaImage(media, image.imageInfo.rotationDegrees)
+                    recognizer.process(still)
+                        .addOnSuccessListener { text ->
+                            val result = CardOcr.parse(text.text)
+                            if (!done && result.cardNumber != null && result.expiryYm != null) {
+                                done = true
+                                detected = true
+                                status = "已识别，正在回填…"
+                                onDetected(result)
+                            } else if (!done) {
+                                status = "未识别完整，请对准卡片后重试"
+                            }
+                            capturing = false
+                        }
+                        .addOnFailureListener { error ->
+                            Log.w(TAG, "静态照片 OCR 失败", error)
+                            capturing = false
+                            status = "识别失败，请重试"
+                        }
+                        .addOnCompleteListener { image.close() }
+                }
+
+                override fun onError(exception: ImageCaptureException) {
+                    Log.w(TAG, "拍照失败", exception)
+                    capturing = false
+                    status = "拍照失败，请重试"
+                }
+            },
+        )
+    }
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         AndroidView(
@@ -63,7 +113,6 @@ fun ScanCardScreen(
             modifier = Modifier.fillMaxSize(),
         )
 
-        // 取景框：卡片放置位置指引（横向，引导横持手机）
         Box(
             Modifier
                 .align(Alignment.Center)
@@ -89,23 +138,28 @@ fun ScanCardScreen(
                 .padding(top = 76.dp),
         )
 
-        // 状态行：正在识别 / 已识别
-        Text(
-            if (detected) "已识别，正在回填…" else "正在识别…",
-            style = MaterialTheme.typography.labelLarge,
-            color = if (detected) colors.goldText else MaterialTheme.colorScheme.onSurfaceVariant,
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 48.dp),
-        )
+                .padding(bottom = 28.dp),
+        ) {
+            Text(
+                status,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (detected) colors.goldText else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(
+                onClick = { captureStill() },
+                enabled = !capturing && !done,
+                modifier = Modifier.padding(top = 12.dp),
+            ) {
+                Text(if (capturing) "正在识别…" else "拍照识别")
+            }
+        }
     }
 
     LaunchedEffect(Unit) {
-        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-        var capturing = false
-        var done = false
-
-        val capture = ImageCapture.Builder().build()
         val analyzer = ImageAnalysis.Analyzer { imageProxy ->
             val mediaImage = imageProxy.image
             if (mediaImage == null || done || capturing) {
@@ -115,60 +169,38 @@ fun ScanCardScreen(
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
             recognizer.process(image)
                 .addOnSuccessListener { visionText ->
-                    // 画面里出现任意文本 → 卡片已入框，自动拍静态照片做精确 OCR
                     if (!done && !capturing && visionText.text.isNotBlank()) {
-                        capturing = true
-                        capture.takePicture(
-                            ContextCompat.getMainExecutor(context),
-                            object : ImageCapture.OnImageCapturedCallback() {
-                                override fun onCaptureSuccess(image: ImageProxy) {
-                                    val media = image.image
-                                    if (media == null) {
-                                        image.close()
-                                        capturing = false
-                                        return
-                                    }
-                                    val still = InputImage.fromMediaImage(media, image.imageInfo.rotationDegrees)
-                                    recognizer.process(still)
-                                        .addOnSuccessListener { text ->
-                                            val result = CardOcr.parse(text.text)
-                                            if (!done && result.cardNumber != null && result.expiryYm != null) {
-                                                done = true
-                                                detected = true
-                                                onDetected(result)
-                                            }
-                                            capturing = false
-                                        }
-                                        .addOnFailureListener { capturing = false }
-                                    image.close()
-                                }
-
-                                override fun onError(exception: ImageCaptureException) {
-                                    capturing = false
-                                }
-                            },
-                        )
+                        captureStill()
                     }
                 }
-                .addOnFailureListener { /* 忽略单帧失败 */ }
-            imageProxy.close()
+                .addOnCompleteListener { imageProxy.close() }
         }
 
-        val cameraProvider = ProcessCameraProvider.getInstance(context).get()
-        val preview = Preview.Builder().build().also {
-            it.setSurfaceProvider(previewView.surfaceProvider)
+        try {
+            val cameraProvider = ProcessCameraProvider.getInstance(context).get()
+            val preview = Preview.Builder().build().also {
+                it.setSurfaceProvider(previewView.surfaceProvider)
+            }
+            val analysis = ImageAnalysis.Builder()
+                .setTargetResolution(android.util.Size(1280, 720))
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build()
+                .also { it.setAnalyzer(ContextCompat.getMainExecutor(context), analyzer) }
+            cameraProvider.unbindAll()
+            cameraProvider.bindToLifecycle(
+                lifecycleOwner,
+                CameraSelector.DEFAULT_BACK_CAMERA,
+                preview, analysis, capture,
+            )
+        } catch (error: Exception) {
+            Log.e(TAG, "相机启动失败", error)
+            status = "相机启动失败，请返回重试"
         }
-        val analysis = ImageAnalysis.Builder()
-            // 限制到 720p，提高识别速度
-            .setTargetResolution(android.util.Size(1280, 720))
-            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .build()
-            .also { it.setAnalyzer(ContextCompat.getMainExecutor(context), analyzer) }
-        cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(
-            lifecycleOwner,
-            CameraSelector.DEFAULT_BACK_CAMERA,
-            preview, analysis, capture,
-        )
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { recognizer.close() }
     }
 }
+
+private const val TAG = "ScanCardScreen"
