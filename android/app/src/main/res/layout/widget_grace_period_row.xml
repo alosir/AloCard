@@ -1,22 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 小组件单行：银行名 + 天数（无序号，不加粗），固定行高均匀填充 -->
+<!-- 免息期双列网格的一行（左右两格） -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="26dp"
+    android:layout_height="wrap_content"
     android:orientation="horizontal">
 
-    <TextView
-        android:id="@+id/row_bank"
+    <LinearLayout
+        android:id="@+id/cell_left"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:textSize="14sp" />
+        android:orientation="vertical"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp" />
 
-    <TextView
-        android:id="@+id/row_days"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/cell_right"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:textSize="14sp" />
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp" />
 </LinearLayout>

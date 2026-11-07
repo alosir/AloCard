@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 最近待还（4x2）：总额+笔数 + 行列表 + 页脚，深金渐变卡片 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/widget_due_bg"
-    android:padding="12dp">
+    android:padding="14dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -12,28 +13,90 @@
         android:orientation="horizontal">
 
         <TextView
-            android:id="@+id/due_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="最近待还"
-            android:textColor="#F6E6AD"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:text="近期待还"
+            android:textColor="#C5BBA9"
+            android:textSize="11sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="待还总额"
+            android:textColor="#E6C783"
+            android:textSize="9sp"
+            android:background="@drawable/widget_pill_bg"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="8dp"
+        android:gravity="bottom">
 
         <TextView
             android:id="@+id/due_total"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="#F5E2B4"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/due_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#F6E6AD"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:layout_marginStart="8dp"
+            android:textColor="#9F988E"
+            android:textSize="10sp" />
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#1FFFFFFF" />
 
     <LinearLayout
         android:id="@+id/due_rows"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginTop="6dp" />
+        android:layout_marginTop="3dp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="逾期金额优先提醒"
+            android:textColor="#AAA196"
+            android:textSize="9sp" />
+
+        <TextView
+            android:id="@+id/due_footer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="查看全部账单 ›"
+            android:textColor="#E6C783"
+            android:textSize="9sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 </LinearLayout>

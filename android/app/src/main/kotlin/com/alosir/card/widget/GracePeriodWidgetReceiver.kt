@@ -79,8 +79,22 @@ class GracePeriodWidgetReceiver : AppWidgetProvider() {
             views.setTextViewText(R.id.widget_date, LocalDate.now().format(DATE_FMT))
 
             views.removeAllViews(R.id.widget_rows)
-            rows.take(MAX_ROWS).forEach { row ->
-                views.addView(R.id.widget_rows, buildRow(context, row))
+            // 双列网格：每行两格，最后一行可只有一格
+            rows.take(MAX_ROWS).chunked(2).forEach { pair ->
+                val row = RemoteViews(context.packageName, R.layout.widget_grace_period_row)
+                pair.forEachIndexed { index, item ->
+                    val cell = RemoteViews(context.packageName, R.layout.widget_grace_period_cell).apply {
+                        setTextViewText(R.id.cell_bank, item.bankName)
+                        setTextViewText(R.id.cell_days, item.days?.toString() ?: "—")
+                    }
+                    row.addView(if (index == 0) R.id.cell_left else R.id.cell_right, cell)
+                }
+                views.addView(R.id.widget_rows, row)
+            }
+            // 页脚：最长免息天数
+            val maxDays = rows.mapNotNull { it.days }.maxOrNull()
+            if (maxDays != null) {
+                views.setTextViewText(R.id.widget_footer, "最长免息 $maxDays 天")
             }
             // 空数据：不显示假行，点击打开 App 去添加卡片（PRD P12 空状态）
             if (rows.isEmpty()) {
@@ -109,11 +123,5 @@ class GracePeriodWidgetReceiver : AppWidgetProvider() {
             )
         }
 
-        private fun buildRow(context: Context, row: WidgetRow): RemoteViews {
-            return RemoteViews(context.packageName, R.layout.widget_grace_period_row).apply {
-                setTextViewText(R.id.row_bank, row.bankName)
-                setTextViewText(R.id.row_days, row.days?.let { "$it 天" } ?: "—")
-            }
-        }
-    }
+}
 }

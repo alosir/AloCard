@@ -55,11 +55,12 @@ class DueBillsWidgetReceiver : AppWidgetProvider() {
 
         private fun buildViews(context: Context, rows: List<DueWidgetRow>, totalCents: Long): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_due_bills)
-            views.setTextViewText(R.id.due_title, "最近待还")
             views.setTextViewText(R.id.due_total, Money.format(totalCents))
+            views.setTextViewText(R.id.due_count, "共 ${rows.size} 笔")
             views.removeAllViews(R.id.due_rows)
             rows.take(MAX_ROWS).forEach { row ->
                 val item = RemoteViews(context.packageName, R.layout.widget_due_row).apply {
+                    setTextViewText(R.id.due_mark, row.label.firstOrNull()?.toString() ?: "卡")
                     setTextViewText(R.id.due_label, row.label)
                     setTextViewText(R.id.due_amount, Money.format(row.amountCents))
                     // 每条账单可分别点击进入对应账单详情页
@@ -79,7 +80,7 @@ class DueBillsWidgetReceiver : AppWidgetProvider() {
                 views.addView(R.id.due_rows, item)
             }
             if (rows.isEmpty()) {
-                views.setTextViewText(R.id.due_title, "暂无待还账单")
+                views.setTextViewText(R.id.due_count, "暂无待还")
             }
             val openIntent = android.app.PendingIntent.getActivity(
                 context,
@@ -91,7 +92,7 @@ class DueBillsWidgetReceiver : AppWidgetProvider() {
                     android.app.PendingIntent.FLAG_IMMUTABLE,
             )
             views.setOnClickPendingIntent(R.id.due_rows, openIntent)
-            views.setOnClickPendingIntent(R.id.due_title, openIntent)
+            views.setOnClickPendingIntent(R.id.due_footer, openIntent)
             return views
         }
     }

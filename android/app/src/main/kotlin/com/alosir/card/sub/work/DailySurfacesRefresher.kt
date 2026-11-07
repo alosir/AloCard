@@ -66,11 +66,11 @@ class DailySurfacesRefresher @Inject constructor(
             .sortedWith(compareBy({ if (it.dueDays < 0) 0 else 1 }, { it.dueDays }))
             .map { entry ->
                 val label = when {
-                    entry.dueDays < 0 -> "${entry.bankName}-逾期"
-                    entry.dueDays == 0 -> "${entry.bankName}-今天"
-                    entry.dueDays == 1 -> "${entry.bankName}-明天"
-                    entry.dueDays == 2 -> "${entry.bankName}-后天"
-                    else -> "${entry.bankName}-${entry.dueDays}天后"
+                    entry.dueDays < 0 -> "${entry.bankName} · 逾期"
+                    entry.dueDays == 0 -> "${entry.bankName} · 今天"
+                    entry.dueDays == 1 -> "${entry.bankName} · 明天"
+                    entry.dueDays == 2 -> "${entry.bankName} · 后天"
+                    else -> "${entry.bankName} · ${entry.dueDays}天后"
                 }
                 com.alosir.card.widget.DueWidgetRow(label, entry.outstandingCents, entry.groupId)
             }

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 免息期网格单元：银行名（小灰） + 天数（大深） + 天（小灰） -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/cell_bank"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#68635D"
+        android:textSize="10sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="bottom">
+
+        <TextView
+            android:id="@+id/cell_days"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#25231F"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="2dp"
+            android:text="天"
+            android:textColor="#8D887F"
+            android:textSize="9sp" />
+    </LinearLayout>
+</LinearLayout>
