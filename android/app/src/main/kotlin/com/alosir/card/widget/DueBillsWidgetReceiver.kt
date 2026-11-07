@@ -14,8 +14,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 
-/** 待还小部件的一行：label（逾期/今天/明天/N天后）+ 金额 */
-data class DueWidgetRow(val label: String, val amountCents: Long)
+/** 待还小部件的一行：label（银行名-逾期/今天/明天/后天/N天后）+ 金额 + 组 id（点击进详情） */
+data class DueWidgetRow(val label: String, val amountCents: Long, val groupId: Long)
 
 /**
  * 最近待还记录小组件（2x2）。
@@ -44,23 +44,37 @@ class DueBillsWidgetReceiver : AppWidgetProvider() {
     companion object {
         const val MAX_ROWS = 5
 
-        fun render(context: Context, rows: List<DueWidgetRow>) {
+        fun render(context: Context, rows: List<DueWidgetRow>, totalCents: Long) {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(
                 android.content.ComponentName(context, DueBillsWidgetReceiver::class.java)
             )
             if (ids.isEmpty()) return
-            ids.forEach { manager.updateAppWidget(it, buildViews(context, rows)) }
+            ids.forEach { manager.updateAppWidget(it, buildViews(context, rows, totalCents)) }
         }
 
-        private fun buildViews(context: Context, rows: List<DueWidgetRow>): RemoteViews {
+        private fun buildViews(context: Context, rows: List<DueWidgetRow>, totalCents: Long): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_due_bills)
             views.setTextViewText(R.id.due_title, "最近待还")
+            views.setTextViewText(R.id.due_total, Money.format(totalCents))
             views.removeAllViews(R.id.due_rows)
             rows.take(MAX_ROWS).forEach { row ->
                 val item = RemoteViews(context.packageName, R.layout.widget_due_row).apply {
                     setTextViewText(R.id.due_label, row.label)
                     setTextViewText(R.id.due_amount, Money.format(row.amountCents))
+                    // 每条账单可分别点击进入对应账单详情页
+                    val intent = Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        putExtra(MainActivity.EXTRA_GROUP_ID, row.groupId)
+                    }
+                    val pending = android.app.PendingIntent.getActivity(
+                        context,
+                        row.groupId.toInt(),
+                        intent,
+                        android.app.PendingIntent.FLAG_UPDATE_CURRENT or
+                            android.app.PendingIntent.FLAG_IMMUTABLE,
+                    )
+                    setOnClickPendingIntent(R.id.due_row_root, pending)
                 }
                 views.addView(R.id.due_rows, item)
             }

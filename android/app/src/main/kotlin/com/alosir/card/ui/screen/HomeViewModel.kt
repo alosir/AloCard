@@ -62,6 +62,10 @@ data class GroupItem(
     val billAmountCents: Long? = null,
     /** 已还款金额（分），累计式 */
     val paidAmountCents: Long = 0L,
+    /** 下一个还款日距今的天数（已结清时排序与展示用） */
+    val nextDueDays: Int? = null,
+    /** 下期账单日（已结清时右侧「下期出账」用） */
+    val nextBillDate: LocalDate? = null,
 )
 
 /** 首页 UI 状态 */
@@ -186,6 +190,11 @@ class HomeViewModel @Inject constructor(
                 dueDate = dueDate,
                 billAmountCents = group.currentBill?.billAmountCents,
                 paidAmountCents = group.currentBill?.paidAmountCents ?: 0L,
+                nextDueDays = java.time.temporal.ChronoUnit.DAYS.between(
+                    today,
+                    DateEngine.nextBillingDate(fallbackBillDay, today).plusDays(fallbackOffset.toLong()),
+                ).toInt(),
+                nextBillDate = DateEngine.nextBillingDate(fallbackBillDay, today),
             )
         }
 
@@ -196,8 +205,14 @@ class HomeViewModel @Inject constructor(
                     .thenBy { it.groupName }
             )
             SortMode.DUE -> items.sortedWith(
-                compareBy<GroupItem> { it.dueDays ?: Int.MAX_VALUE }
-                    .thenBy { it.groupName }
+                // 已逾期 > 正常待还 > 已结清；未还清按本期还款日，已结清按下个还款日
+                compareBy<GroupItem> {
+                    when {
+                        it.dueState == DueState.OVERDUE -> 0
+                        it.billState == BillState.SETTLED -> 2
+                        else -> 1
+                    }
+                }.thenBy { it.dueDays ?: it.nextDueDays ?: Int.MAX_VALUE },
             )
         }
 

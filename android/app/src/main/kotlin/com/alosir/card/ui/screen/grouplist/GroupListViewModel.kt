@@ -34,6 +34,8 @@ data class BankBillRow(
     val billAmountCents: Long?,
     val paidAmountCents: Long,
     val creditLimitCents: Long?,
+    /** 下期账单日（已结清时右侧「出账」用） */
+    val nextBillDate: LocalDate? = null,
 )
 
 /** 账单页状态 */
@@ -94,6 +96,7 @@ class GroupListViewModel @Inject constructor(
                     billAmountCents = bill?.billAmountCents,
                     paidAmountCents = bill?.paidAmountCents ?: 0L,
                     creditLimitCents = group.creditLimitCents,
+                    nextBillDate = DateEngine.nextBillingDate(billDay, today),
                 )
             }
             // 排序：状态优先（已逾期 > 待还款/待录入 > 已结清），类内再按还款日升序

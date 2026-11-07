@@ -111,7 +111,6 @@ class GracePeriodWidgetReceiver : AppWidgetProvider() {
 
         private fun buildRow(context: Context, row: WidgetRow): RemoteViews {
             return RemoteViews(context.packageName, R.layout.widget_grace_period_row).apply {
-                setTextViewText(R.id.row_rank, row.rank.toString())
                 setTextViewText(R.id.row_bank, row.bankName)
                 setTextViewText(R.id.row_days, row.days?.let { "$it 天" } ?: "—")
             }

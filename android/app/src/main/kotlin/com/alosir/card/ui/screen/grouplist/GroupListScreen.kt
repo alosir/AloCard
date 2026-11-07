@@ -37,6 +37,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alosir.card.ui.common.goldBrush
 import com.alosir.card.ui.components.BankLedgerRow
+import com.alosir.card.ui.components.BillState
+import com.alosir.card.ui.components.DueState
 import com.alosir.card.ui.components.EmptyState
 import com.alosir.card.ui.theme.AloCardTheme
 import com.alosir.card.ui.theme.tabColorFor
@@ -107,13 +109,51 @@ fun GroupListScreen(
             } else {
                 LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 4.dp)) {
                     items(ui.rows, key = { it.groupId }) { row ->
+                        val outstanding = row.billAmountCents?.let { (it - row.paidAmountCents).coerceAtLeast(0L) }
+                        val nextBillDate = row.nextBillDate
+                        var leftMain = ""
+                        var leftSub = ""
+                        var rightText = ""
+                        var rightColor: androidx.compose.ui.graphics.Color? = null
+                        when {
+                            row.billState == BillState.SETTLED -> {
+                                // 已结清：显示「本期已还清」，右侧改为下期出账日
+                                leftMain = "本期已还清"
+                                rightText = nextBillDate?.let { next ->
+                                    val days = java.time.temporal.ChronoUnit.DAYS.between(row.billDate, next).toInt()
+                                    val dayCount = java.time.temporal.ChronoUnit.DAYS.between(
+                                        com.alosir.card.domain.util.DateProvider.today(), next,
+                                    ).toInt()
+                                    "${next.monthValue}/${next.dayOfMonth} 出账（${dayCount}天后）"
+                                } ?: "本期已结清"
+                            }
+                            row.billState == BillState.PENDING_ENTRY -> {
+                                leftMain = "待录入"
+                                rightText = row.dueSubText.removeSuffix(" 还款") + " 还款（${row.dueDays}天后）"
+                            }
+                            outstanding == null -> {
+                                leftMain = "未出账"
+                                rightText = row.dueSubText.removeSuffix(" 还款") + " 还款（${row.dueDays}天后）"
+                            }
+                            else -> {
+                                // 未还清：左侧剩余待还金额，右侧本期还款日
+                                leftMain = com.alosir.card.domain.util.Money.format(outstanding)
+                                leftSub = "剩余待还"
+                                rightText = if (row.dueState == DueState.OVERDUE) {
+                                    rightColor = colors.overdue
+                                    "${row.dueSubText.removeSuffix(" 还款")} 还款（${-row.dueDays!!}天前）"
+                                } else {
+                                    row.dueSubText.removeSuffix(" 还款") + " 还款（${row.dueDays}天后）"
+                                }
+                            }
+                        }
                         BankLedgerRow(
                             bankName = row.bankName,
                             subLabel = if (row.cardCount > 1) "${row.cardCount} 张卡合并出账" else "尾号 ${row.firstTail}",
-                            outstandingCents = row.billAmountCents?.let { it - row.paidAmountCents },
-                            dueDays = row.dueDays,
-                            dueText = row.dueText,
-                            dueSubText = row.dueSubText,
+                            leftMain = leftMain,
+                            leftSub = leftSub,
+                            rightText = rightText,
+                            rightColor = rightColor,
                             dueState = row.dueState,
                             billState = row.billState,
                             billDate = row.billDate,

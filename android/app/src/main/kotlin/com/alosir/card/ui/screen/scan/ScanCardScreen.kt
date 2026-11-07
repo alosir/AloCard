@@ -2,6 +2,9 @@ package com.alosir.card.ui.screen.scan
 
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -60,7 +63,7 @@ fun ScanCardScreen(
             modifier = Modifier.fillMaxSize(),
         )
 
-        // 取景框：卡片放置位置指引
+        // 取景框：卡片放置位置指引（横向，引导横持手机）
         Box(
             Modifier
                 .align(Alignment.Center)
@@ -69,12 +72,21 @@ fun ScanCardScreen(
                 .border(2.dp, colors.gold, RoundedCornerShape(20.dp)),
         )
         Text(
-            "将卡面对准框内",
-            style = MaterialTheme.typography.labelLarge,
+            "将卡片放在框内",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = 40.dp),
+        )
+        Text(
+            "建议横持手机以获得更大取景画面",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 76.dp),
         )
 
         // 状态行：正在识别 / 已识别
@@ -90,23 +102,52 @@ fun ScanCardScreen(
 
     LaunchedEffect(Unit) {
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        var capturing = false
         var done = false
+
+        val capture = ImageCapture.Builder().build()
         val analyzer = ImageAnalysis.Analyzer { imageProxy ->
             val mediaImage = imageProxy.image
-            if (mediaImage == null || done) {
+            if (mediaImage == null || done || capturing) {
                 imageProxy.close()
                 return@Analyzer
             }
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
             recognizer.process(image)
                 .addOnSuccessListener { visionText ->
-                    if (!done) {
-                        val result = CardOcr.parse(visionText.text)
-                        if (result.cardNumber != null && result.expiryYm != null) {
-                            done = true
-                            detected = true
-                            onDetected(result)
-                        }
+                    // 画面里出现任意文本 → 卡片已入框，自动拍静态照片做精确 OCR
+                    if (!done && !capturing && visionText.text.isNotBlank()) {
+                        capturing = true
+                        capture.takePicture(
+                            ContextCompat.getMainExecutor(context),
+                            object : ImageCapture.OnImageCapturedCallback() {
+                                override fun onCaptureSuccess(image: ImageProxy) {
+                                    val media = image.image
+                                    if (media == null) {
+                                        image.close()
+                                        capturing = false
+                                        return
+                                    }
+                                    val still = InputImage.fromMediaImage(media, image.imageInfo.rotationDegrees)
+                                    recognizer.process(still)
+                                        .addOnSuccessListener { text ->
+                                            val result = CardOcr.parse(text.text)
+                                            if (!done && result.cardNumber != null && result.expiryYm != null) {
+                                                done = true
+                                                detected = true
+                                                onDetected(result)
+                                            }
+                                            capturing = false
+                                        }
+                                        .addOnFailureListener { capturing = false }
+                                    image.close()
+                                }
+
+                                override fun onError(exception: ImageCaptureException) {
+                                    capturing = false
+                                }
+                            },
+                        )
                     }
                 }
                 .addOnFailureListener { /* 忽略单帧失败 */ }
@@ -124,6 +165,10 @@ fun ScanCardScreen(
             .build()
             .also { it.setAnalyzer(ContextCompat.getMainExecutor(context), analyzer) }
         cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis)
+        cameraProvider.bindToLifecycle(
+            lifecycleOwner,
+            CameraSelector.DEFAULT_BACK_CAMERA,
+            preview, analysis, capture,
+        )
     }
 }

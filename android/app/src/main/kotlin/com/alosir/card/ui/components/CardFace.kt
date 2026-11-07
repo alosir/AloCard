@@ -151,10 +151,14 @@ fun BankChip(color: Color, glyph: String, modifier: Modifier = Modifier) {
 fun BankLedgerRow(
     bankName: String,
     subLabel: String,
-    outstandingCents: Long?,
-    dueDays: Int?,
-    dueText: String,
-    dueSubText: String,
+    /** 左侧大文字（金额/天数/状态文本，由调用方按业务规则生成） */
+    leftMain: String,
+    /** 大文字下的小标签，可空 */
+    leftSub: String,
+    /** 右侧一行文案（由调用方按业务规则生成） */
+    rightText: String,
+    /** 右侧文案颜色；逾期等场景传入状态色，默认次要文字色 */
+    rightColor: Color? = null,
     dueState: DueState,
     billState: BillState,
     billDate: LocalDate,
@@ -166,15 +170,6 @@ fun BankLedgerRow(
     modifier: Modifier = Modifier,
 ) {
     val colors = AloCardTheme.colors
-    val dateOnly = dueSubText.removeSuffix(" 还款")
-    // 单行还款文案：日期 + 相对天数合并，不再两行重复
-    val dueLine = when {
-        dueState == DueState.OVERDUE -> "$dueText（$dateOnly 到期）"
-        billState == BillState.SETTLED -> "本期已结清"
-        dueDays == null -> "补充账期后可用"
-        dueDays == 0 -> "今天还款（$dateOnly）"
-        else -> "$dateOnly 还款（$dueDays 天后）"
-    }
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -210,43 +205,27 @@ fun BankLedgerRow(
                 Modifier.fillMaxWidth().padding(top = 6.dp),
                 verticalAlignment = Alignment.Bottom,
             ) {
-                // 大数字 = 本期应还金额（替代原免息天数）
-                when {
-                    billState == BillState.PENDING_ENTRY -> Text(
-                        "待录入",
-                        style = MaterialTheme.typography.titleMedium,
+                // 左侧大文字 + 可选小标签（内容由调用方按业务规则生成）
+                Text(
+                    leftMain,
+                    style = MaterialTheme.typography.displayLarge,
+                    fontSize = 22.sp,
+                    color = colors.goldText,
+                )
+                if (leftSub.isNotEmpty()) {
+                    Text(
+                        leftSub,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp, bottom = 3.dp),
                     )
-                    outstandingCents == null -> Text(
-                        "未出账",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    else -> {
-                        Text(
-                            com.alosir.card.domain.util.Money.format(outstandingCents),
-                            style = MaterialTheme.typography.displayLarge,
-                            fontSize = 22.sp,
-                            color = colors.goldText,
-                        )
-                        Text(
-                            "本期应还",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp, bottom = 3.dp),
-                        )
-                    }
                 }
                 Spacer(Modifier.weight(1f))
                 Text(
-                    dueLine,
+                    rightText,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = if (dueState == DueState.NORMAL) FontWeight.Normal else FontWeight.Medium,
-                    color = when (dueState) {
-                        DueState.OVERDUE -> colors.overdue
-                        DueState.DUE -> colors.due
-                        DueState.NORMAL -> MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                    color = rightColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             CountdownStrip(

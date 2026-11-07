@@ -52,35 +52,34 @@ class DailySurfacesRefresher @Inject constructor(
             },
         )
 
-        // 1b. 最近待还记录小组件：逾期合并一行，其余按天分组汇总
-        data class DueEntry(val dueDays: Int, val outstandingCents: Long)
+        // 1b. 最近待还记录小组件：每组一行（银行名-逾期/今天/明天/后天/N天后），点击进详情
+        data class DueEntry(val dueDays: Int, val outstandingCents: Long, val groupId: Long, val bankName: String)
         val dueEntries = groups.mapNotNull { group ->
             val billingDay = group.billingDay ?: return@mapNotNull null
             val offset = group.dueOffsetDays ?: return@mapNotNull null
             val dueDays = DateEngine.daysUntilDue(billingDay, offset, today) ?: return@mapNotNull null
             val outstanding = group.currentBill?.outstandingCents ?: return@mapNotNull null
             if (outstanding <= 0L) return@mapNotNull null
-            DueEntry(dueDays, outstanding)
+            DueEntry(dueDays, outstanding, group.id, group.name)
         }
-        val dueRows = buildList {
-            val overdueTotal = dueEntries.filter { it.dueDays < 0 }.sumOf { it.outstandingCents }
-            if (overdueTotal > 0L) {
-                add(com.alosir.card.widget.DueWidgetRow("逾期", overdueTotal))
-            }
-            dueEntries.filter { it.dueDays >= 0 }
-                .groupBy { it.dueDays }
-                .entries
-                .sortedBy { it.key }
-                .forEach { (days, entries) ->
-                    val label = when (days) {
-                        0 -> "今天"
-                        1 -> "明天"
-                        else -> "${days}天后"
-                    }
-                    add(com.alosir.card.widget.DueWidgetRow(label, entries.sumOf { it.outstandingCents }))
+        val dueRows = dueEntries
+            .sortedWith(compareBy({ if (it.dueDays < 0) 0 else 1 }, { it.dueDays }))
+            .map { entry ->
+                val label = when {
+                    entry.dueDays < 0 -> "${entry.bankName}-逾期"
+                    entry.dueDays == 0 -> "${entry.bankName}-今天"
+                    entry.dueDays == 1 -> "${entry.bankName}-明天"
+                    entry.dueDays == 2 -> "${entry.bankName}-后天"
+                    else -> "${entry.bankName}-${entry.dueDays}天后"
                 }
-        }.take(com.alosir.card.widget.DueBillsWidgetReceiver.MAX_ROWS)
-        com.alosir.card.widget.DueBillsWidgetReceiver.render(context, dueRows)
+                com.alosir.card.widget.DueWidgetRow(label, entry.outstandingCents, entry.groupId)
+            }
+            .take(com.alosir.card.widget.DueBillsWidgetReceiver.MAX_ROWS)
+        com.alosir.card.widget.DueBillsWidgetReceiver.render(
+            context,
+            dueRows,
+            dueEntries.sumOf { it.outstandingCents },
+        )
 
         // 2. 常驻通知：有临近到期 → 还款提醒内容；否则 → 免息期建议（DESIGN.md 5.9）
         val dueLines = groups.mapNotNull { group ->

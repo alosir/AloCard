@@ -59,6 +59,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.alosir.card.domain.util.Money
 import com.alosir.card.ui.common.goldBrush
 import com.alosir.card.ui.components.BankLedgerRow
+import com.alosir.card.ui.components.BillState
+import com.alosir.card.ui.components.DueState
 import com.alosir.card.ui.components.CreditCardFace
 import com.alosir.card.ui.components.CreditOverview
 import com.alosir.card.ui.components.EmptyState
@@ -276,14 +278,55 @@ fun HomeScreen(
                         }
                     }
                     items(uiState.groups, key = { it.groupId }) { group ->
+                        // 距还款日/免息期两种模式的文案规则不同，分别生成
+                        val dueDays = group.dueDays
+                        val nextDueDays = group.nextDueDays
+                        val nextBillDate = group.nextBillDate
+                        var leftMain = ""
+                        var leftSub = ""
+                        var rightText = ""
+                        var rightColor: androidx.compose.ui.graphics.Color? = null
+                        when (uiState.sortMode) {
+                            SortMode.GRACE -> {
+                                // 免息期：左侧免息天数，右侧当天刷卡后的出账日
+                                leftMain = group.gracePeriodDays?.toString() ?: "待完善"
+                                leftSub = "天免息"
+                                rightText = when {
+                                    nextBillDate == null -> "补充账期后可用"
+                                    nextDueDays == 0 -> "今天出账"
+                                    else -> "${nextBillDate.monthValue}/${nextBillDate.dayOfMonth} 出账（${nextDueDays}天后）"
+                                }
+                            }
+                            SortMode.DUE -> {
+                                when {
+                                    group.dueState == DueState.OVERDUE -> {
+                                        leftMain = "已逾期${-dueDays!!}天"
+                                        rightText = "${group.dueSubText.removeSuffix(" 还款")} 还款（${-dueDays}天前）"
+                                        rightColor = colors.overdue
+                                    }
+                                    group.billState == BillState.SETTLED -> {
+                                        leftMain = formatDays(nextDueDays)
+                                        rightText = nextBillDate?.let { "${it.monthValue}/${it.dayOfMonth} 下期出账" } ?: "本期已结清"
+                                    }
+                                    else -> {
+                                        leftMain = formatDays(dueDays)
+                                        rightText = if (dueDays != null) {
+                                            "${group.dueSubText.removeSuffix(" 还款")} 还款（${dueDays}天后）"
+                                        } else {
+                                            "补充账期后可用"
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         BankLedgerRow(
                             bankName = group.bankName,
                             subLabel = if (group.cards.size > 1) "${group.cards.size} 张卡合并出账"
                             else "尾号 ${group.cards.firstOrNull()?.tail ?: "????"}",
-                            outstandingCents = group.billAmountCents?.let { it - group.paidAmountCents },
-                            dueDays = group.dueDays,
-                            dueText = group.dueText,
-                            dueSubText = group.dueSubText,
+                            leftMain = leftMain,
+                            leftSub = leftSub,
+                            rightText = rightText,
+                            rightColor = rightColor,
                             dueState = group.dueState,
                             billState = group.billState,
                             billDate = group.billDate,
@@ -328,3 +371,12 @@ private fun isNotificationGranted(context: Context): Boolean =
     } else {
         NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
+
+/** 距还款日天数显示：今天/明天/后天/N天 */
+private fun formatDays(days: Int?): String = when (days) {
+    null -> "待完善"
+    0 -> "今天"
+    1 -> "明天"
+    2 -> "后天"
+    else -> "${days}天"
+}
