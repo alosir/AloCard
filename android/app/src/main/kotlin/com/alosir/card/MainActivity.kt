@@ -28,6 +28,9 @@ class MainActivity : FragmentActivity() {
     lateinit var refresher: DailySurfacesRefresher
 
     @Inject
+    lateinit var billingGroups: com.alosir.card.domain.repository.BillingGroupRepository
+
+    @Inject
     lateinit var security: SecurityManager
 
     @Inject
@@ -44,6 +47,11 @@ class MainActivity : FragmentActivity() {
         AloCardWorkManager.ensureScheduled(this)
 
         handleSurfaceRefresh()
+        lifecycleScope.launch {
+            billingGroups.observeGroupsWithCards().collect {
+                runCatching { refresher.refresh() }
+            }
+        }
 
         setContent {
             AloCardTheme {

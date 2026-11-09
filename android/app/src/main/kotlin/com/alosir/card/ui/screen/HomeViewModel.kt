@@ -64,8 +64,10 @@ data class GroupItem(
     val paidAmountCents: Long = 0L,
     /** 下一个还款日距今的天数（已结清时排序与展示用） */
     val nextDueDays: Int? = null,
-    /** 下期账单日（已结清时右侧「下期出账」用） */
+    /** 消费所属账单日 */
     val nextBillDate: LocalDate? = null,
+    /** 消费所属账单的最后还款日 */
+    val nextDueDate: LocalDate? = null,
 )
 
 /** 首页 UI 状态 */
@@ -195,6 +197,7 @@ class HomeViewModel @Inject constructor(
                     DateEngine.nextBillingDate(fallbackBillDay, today).plusDays(fallbackOffset.toLong()),
                 ).toInt(),
                 nextBillDate = DateEngine.nextBillingDate(fallbackBillDay, today),
+                nextDueDate = DateEngine.nextDueDateOf(fallbackBillDay, fallbackOffset, today),
             )
         }
 

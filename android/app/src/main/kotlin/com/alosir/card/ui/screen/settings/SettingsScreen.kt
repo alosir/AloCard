@@ -253,7 +253,6 @@ fun SettingsScreen(
                 SectionTitle("备份")
                 SettingsRow(
                     title = "添加小部件",
-                    hint = "桌面 2x2：免息期 TOP5 / 最近待还记录",
                     onClick = { showWidgetChooser = true },
                 )
                 SettingsRow(
@@ -533,7 +532,7 @@ private fun ChangelogContent(markdown: String) {
 }
 
 @Composable
-private fun SettingsRow(title: String, hint: String, onClick: () -> Unit) {
+private fun SettingsRow(title: String, hint: String = "", onClick: () -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
@@ -541,6 +540,6 @@ private fun SettingsRow(title: String, hint: String, onClick: () -> Unit) {
             .padding(vertical = 8.dp),
     ) {
         Text(title, style = MaterialTheme.typography.bodyLarge)
-        HintText(hint)
+        if (hint.isNotEmpty()) HintText(hint)
     }
 }

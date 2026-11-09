@@ -288,13 +288,15 @@ fun HomeScreen(
                         var rightColor: androidx.compose.ui.graphics.Color? = null
                         when (uiState.sortMode) {
                             SortMode.GRACE -> {
-                                // 免息期：左侧免息天数，右侧当天刷卡后的出账日
                                 leftMain = group.gracePeriodDays?.toString() ?: "待完善"
                                 leftSub = "天免息"
-                                rightText = when {
-                                    nextBillDate == null -> "补充账期后可用"
-                                    nextDueDays == 0 -> "今天出账"
-                                    else -> "${nextBillDate.monthValue}/${nextBillDate.dayOfMonth} 出账（${nextDueDays}天后）"
+                                rightText = if (nextBillDate != null && group.nextDueDate != null) {
+                                    com.alosir.card.domain.HomeListDateText.graceBillAndDue(
+                                        nextBillDate,
+                                        group.nextDueDate,
+                                    )
+                                } else {
+                                    "补充账期后可用"
                                 }
                             }
                             SortMode.DUE -> {
@@ -306,12 +308,14 @@ fun HomeScreen(
                                     }
                                     group.billState == BillState.SETTLED -> {
                                         leftMain = formatDays(nextDueDays)
-                                        rightText = nextBillDate?.let { "${it.monthValue}/${it.dayOfMonth} 下期出账" } ?: "本期已结清"
+                                        rightText = group.nextDueDate?.let {
+                                            com.alosir.card.domain.HomeListDateText.nextDue(it)
+                                        } ?: "本期已结清"
                                     }
                                     else -> {
                                         leftMain = formatDays(dueDays)
                                         rightText = if (dueDays != null) {
-                                            "${group.dueSubText.removeSuffix(" 还款")} 还款（${dueDays}天后）"
+                                            com.alosir.card.domain.HomeListDateText.currentDue(group.dueDate)
                                         } else {
                                             "补充账期后可用"
                                         }
