@@ -14,10 +14,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
-/** 账单组表单页状态（P4 / F2.1 / F2.4） */
 data class GroupFormUiState(
     val isEditing: Boolean = false,
     val groupId: Long = -1L,
@@ -25,19 +23,26 @@ data class GroupFormUiState(
     val nameError: String? = null,
     val billingDayText: String = "",
     val billingDayError: String? = null,
+    val dueMode: String = DateEngine.DUE_MODE_OFFSET,
     val dueOffsetDays: Int = 20,
+    val fixedDayText: String = "25",
+    val dueError: String? = null,
     val creditLimitText: String = "",
     val saving: Boolean = false,
     val saved: Boolean = false,
     val deleted: Boolean = false,
 ) {
-    /** 实时换算回显：账单日 X 号 → 本期还款日（PRD 5.2.3，锚点 = 本期账单日） */
     val duePreview: String?
         get() {
             val day = billingDayText.trim().toIntOrNull() ?: return null
             val today = DateProvider.today()
-            val anchor = DateEngine.currentBillingDate(day, today)
-            val due = anchor.plusDays(dueOffsetDays.toLong())
+            if (dueMode == DateEngine.DUE_MODE_FIXED_DAY) {
+                val fixedDay = fixedDayText.trim().toIntOrNull() ?: return "请输入 1–31 的还款日"
+                if (fixedDay !in 1..31) return "还款日须为 1–31 的整数"
+                val due = DateEngine.dueDateOf(day, null, dueMode, fixedDay, today)
+                return "每月 $fixedDay 号还款 → 本期 ${due.monthValue} 月 ${due.dayOfMonth} 日"
+            }
+            val due = DateEngine.dueDateOf(day, dueOffsetDays, today)
             return "账单日 $day 号 → 本期还款日 ${due.monthValue} 月 ${due.dayOfMonth} 日"
         }
 }
@@ -61,7 +66,9 @@ class GroupFormViewModel @Inject constructor(
                     groupId = group.id,
                     name = group.name,
                     billingDayText = group.billingDay?.toString() ?: "",
+                    dueMode = group.dueMode,
                     dueOffsetDays = group.dueOffsetDays ?: 20,
+                    fixedDayText = group.dueDayOfMonth?.toString() ?: "25",
                     creditLimitText = group.creditLimitCents?.let { c -> Money.format(c).removePrefix("¥") } ?: "",
                 )
             }
@@ -75,24 +82,27 @@ class GroupFormViewModel @Inject constructor(
         val day = value.trim().toIntOrNull()
         val error = when {
             value.trim().isEmpty() -> null
-            day == null || day !in 1..28 -> "账单日须为 1–28 的整数"
+            day == null || day !in 1..31 -> "账单日须为 1–31 的整数"
             else -> null
         }
         _ui.update { it.copy(billingDayText = value, billingDayError = error) }
     }
 
-    fun onDueOffsetChange(offset: Int) =
-        _ui.update { it.copy(dueOffsetDays = offset.coerceIn(1, 28)) }
+    fun onDueModeChange(mode: String) =
+        _ui.update { it.copy(dueMode = mode, dueError = null) }
 
-    /** 「固定几号」→ N（锚点为本期账单日，PRD 5.2.3） */
-    fun onFixedDayCommit(fixedDayText: String) {
-        val day = fixedDayText.trim().toIntOrNull() ?: return
-        val billingDay = _ui.value.billingDayText.trim().toIntOrNull() ?: return
-        val anchor = DateEngine.currentBillingDate(billingDay, DateProvider.today())
-        var target = anchor.withDayOfMonth(day.coerceIn(1, 28))
-        if (!target.isAfter(anchor)) target = target.plusMonths(1)
-        val n = ChronoUnit.DAYS.between(anchor, target).toInt()
-        _ui.update { it.copy(dueOffsetDays = n.coerceIn(1, 28)) }
+    fun onDueOffsetChange(offset: Int) =
+        _ui.update { it.copy(dueOffsetDays = offset.coerceIn(1, 28), dueMode = DateEngine.DUE_MODE_OFFSET) }
+
+    fun onFixedDayChange(value: String) {
+        val filtered = value.filter(Char::isDigit).take(2)
+        val day = filtered.toIntOrNull()
+        val error = if (filtered.isNotEmpty() && (day == null || day !in 1..31)) {
+            "还款日须为 1–31 的整数"
+        } else {
+            null
+        }
+        _ui.update { it.copy(fixedDayText = filtered, dueError = error, dueMode = DateEngine.DUE_MODE_FIXED_DAY) }
     }
 
     fun onCreditLimitChange(value: String) = _ui.update { it.copy(creditLimitText = value) }
@@ -107,19 +117,33 @@ class GroupFormViewModel @Inject constructor(
         viewModelScope.launch {
             _ui.update { it.copy(saving = true) }
             val day = state.billingDayText.trim().toIntOrNull()
-            if (state.billingDayText.isNotBlank() && (day == null || day !in 1..28)) {
-                _ui.update { it.copy(saving = false, billingDayError = "账单日须为 1–28 的整数") }
+            if (state.billingDayText.isNotBlank() && (day == null || day !in 1..31)) {
+                _ui.update { it.copy(saving = false, billingDayError = "账单日须为 1–31 的整数") }
+                return@launch
+            }
+            val fixedDay = state.fixedDayText.trim().toIntOrNull()
+            if (day != null && state.dueMode == DateEngine.DUE_MODE_FIXED_DAY &&
+                (fixedDay == null || fixedDay !in 1..31)
+            ) {
+                _ui.update { it.copy(saving = false, dueError = "还款日须为 1–31 的整数") }
                 return@launch
             }
             val group = BillingGroup(
                 id = if (state.isEditing) state.groupId else 0L,
                 name = state.name.trim(),
                 billingDay = day,
-                // 账单日填了而 N 缺省 → 20（PRD 4.2 默认值）；账单日空则整体待完善
-                dueOffsetDays = if (day != null) state.dueOffsetDays else null,
+                dueOffsetDays = if (day != null && state.dueMode == DateEngine.DUE_MODE_OFFSET) {
+                    state.dueOffsetDays
+                } else {
+                    null
+                },
+                dueMode = state.dueMode,
+                dueDayOfMonth = if (day != null && state.dueMode == DateEngine.DUE_MODE_FIXED_DAY) {
+                    fixedDay
+                } else {
+                    null
+                },
                 creditLimitCents = Money.parseToCents(state.creditLimitText),
-                // 银行是标准维度：表单里的「银行」字段同时作为组名与 bankName，
-                // 不再允许与银行无关的自由组名，也不再在编辑时清空 bankName
                 bankName = state.name.trim().ifEmpty { null },
             )
             if (state.isEditing) {

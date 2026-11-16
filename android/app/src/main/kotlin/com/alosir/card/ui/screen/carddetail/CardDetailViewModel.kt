@@ -32,6 +32,8 @@ data class CardDetailUiState(
     val hue: TabHue = TabHue.INDIGO,
     val billingDay: Int? = null,
     val dueOffsetDays: Int? = null,
+    val dueMode: String = "offset",
+    val dueDayOfMonth: Int? = null,
     val creditLimitCents: Long? = null,
     val cards: List<CardRow> = emptyList(),
     val gracePeriodDays: Int? = null,
@@ -84,8 +86,8 @@ class CardDetailViewModel @Inject constructor(
                 return@combine CardDetailUiState(loading = true, groupId = groupId)
             }
             val today = DateProvider.today()
-            val grace = DateEngine.gracePeriod(group.billingDay, group.dueOffsetDays, today)
-            val dueDays = DateEngine.daysUntilDue(group.billingDay, group.dueOffsetDays, today)
+            val grace = DateEngine.gracePeriod(group, today)
+            val dueDays = DateEngine.daysUntilDue(group, today)
 
             val bill = group.currentBill
             val billState = when (DateEngine.billStatus(
@@ -128,6 +130,8 @@ class CardDetailViewModel @Inject constructor(
                 hue = tabHueFor(group.bankName),
                 billingDay = group.billingDay,
                 dueOffsetDays = group.dueOffsetDays,
+                dueMode = group.dueMode,
+                dueDayOfMonth = group.dueDayOfMonth,
                 creditLimitCents = group.creditLimitCents,
                 cards = group.cards.map { card ->
                     CardRow(
@@ -146,7 +150,8 @@ class CardDetailViewModel @Inject constructor(
                 dueState = dueState,
                 billState = billState,
                 billDate = billDate,
-                dueDate = DateEngine.dueDateOf(fallbackDay, fallbackOffset, today),
+                dueDate = DateEngine.dueDateOf(group, today)
+                    ?: DateEngine.dueDateOf(fallbackDay, fallbackOffset, today),
                 nextBillDate = DateEngine.nextBillingDate(fallbackDay, today),
                 billAmountCents = bill?.billAmountCents,
                 paidAmountCents = bill?.paidAmountCents,

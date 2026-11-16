@@ -128,8 +128,8 @@ class HomeViewModel @Inject constructor(
         val today = DateProvider.today()
 
         val items = groups.map { group ->
-            val grace = DateEngine.gracePeriod(group.billingDay, group.dueOffsetDays, today)
-            val dueDays = DateEngine.daysUntilDue(group.billingDay, group.dueOffsetDays, today)
+            val grace = DateEngine.gracePeriod(group, today)
+            val dueDays = DateEngine.daysUntilDue(group, today)
 
             val bill = group.currentBill
             val billStatus = DateEngine.billStatus(
@@ -151,7 +151,10 @@ class HomeViewModel @Inject constructor(
             val fallbackBillDay = group.billingDay ?: 1
             val fallbackOffset = group.dueOffsetDays ?: 20
             val billDate = DateEngine.currentBillingDate(fallbackBillDay, today)
-            val dueDate = DateEngine.dueDateOf(fallbackBillDay, fallbackOffset, today)
+            val dueDate = DateEngine.dueDateOf(group, today)
+                ?: DateEngine.dueDateOf(fallbackBillDay, fallbackOffset, today)
+            val nextDueDate = DateEngine.nextDueDateOf(group, today)
+                ?: DateEngine.nextDueDateOf(fallbackBillDay, fallbackOffset, today)
 
             // 呈现规则（PRD 5.6.4 + HTML 原型已确认的处理）
             val dueText = when {
@@ -192,12 +195,9 @@ class HomeViewModel @Inject constructor(
                 dueDate = dueDate,
                 billAmountCents = group.currentBill?.billAmountCents,
                 paidAmountCents = group.currentBill?.paidAmountCents ?: 0L,
-                nextDueDays = java.time.temporal.ChronoUnit.DAYS.between(
-                    today,
-                    DateEngine.nextBillingDate(fallbackBillDay, today).plusDays(fallbackOffset.toLong()),
-                ).toInt(),
+                nextDueDays = java.time.temporal.ChronoUnit.DAYS.between(today, nextDueDate).toInt(),
                 nextBillDate = DateEngine.nextBillingDate(fallbackBillDay, today),
-                nextDueDate = DateEngine.nextDueDateOf(fallbackBillDay, fallbackOffset, today),
+                nextDueDate = nextDueDate,
             )
         }
 

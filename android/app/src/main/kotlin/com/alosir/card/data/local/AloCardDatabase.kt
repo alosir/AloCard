@@ -19,8 +19,8 @@ import com.alosir.card.data.local.entity.NotificationLogEntity
 /**
  * AloCard 数据库（技术规范 §3）。
  *
- * 版本 1：当前阶段即最终形态（pre-release 无历史库）。
- * 以后任何 schema 变更必须：
+ * 版本 2：账单组增加还款日模式与固定还款日。
+ * 任何 schema 变更必须：
  * 1. 版本号 +1；
  * 2. 提供显式 Migration 并加入 [MIGRATIONS]；
  * 3. **禁止** fallbackToDestructiveMigration——用户数据全部手工录入，丢了就没了。
@@ -33,7 +33,7 @@ import com.alosir.card.data.local.entity.NotificationLogEntity
         AppSettingsEntity::class,
         NotificationLogEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class AloCardDatabase : RoomDatabase() {
@@ -49,7 +49,14 @@ abstract class AloCardDatabase : RoomDatabase() {
         const val NAME = "alocard.db"
 
         /** 后续版本的迁移数组，按版本号升序 */
-        val MIGRATIONS = emptyArray<androidx.room.migration.Migration>()
+        val MIGRATIONS = arrayOf(
+            object : androidx.room.migration.Migration(1, 2) {
+                override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE billing_groups ADD COLUMN due_mode TEXT NOT NULL DEFAULT 'offset'")
+                    db.execSQL("ALTER TABLE billing_groups ADD COLUMN due_day_of_month INTEGER")
+                }
+            },
+        )
 
         fun build(context: Context): AloCardDatabase =
             Room.databaseBuilder(context, AloCardDatabase::class.java, NAME)

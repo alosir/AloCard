@@ -126,14 +126,15 @@ fun GroupDetailScreen(
                     DateEngine.BILL_SETTLED -> BillState.SETTLED
                     else -> BillState.DUE_UNPAID
                 }
-                val dueDays = DateEngine.daysUntilDue(group.billingDay, group.dueOffsetDays, today)
+                val dueDays = DateEngine.daysUntilDue(group, today)
                 // 已结清（剩余待还 ≤ 0）永不逾期——即使已过最后还款日
                 val dueState = if (billState == BillState.SETTLED || dueDays == null) DueState.NORMAL else when (DateEngine.dueStatus(dueDays)) {
                     DateEngine.STATUS_DUE -> DueState.DUE
                     DateEngine.STATUS_OVERDUE -> DueState.OVERDUE
                     else -> DueState.NORMAL
                 }
-                val dueDate = DateEngine.dueDateOf(group.billingDay ?: 1, group.dueOffsetDays ?: 20, today)
+                val dueDate = DateEngine.dueDateOf(group, today)
+                    ?: DateEngine.dueDateOf(group.billingDay ?: 1, group.dueOffsetDays ?: 20, today)
 
                 // 本期应还卡
                 Row(
@@ -183,9 +184,15 @@ fun GroupDetailScreen(
                         .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                 ) {
-                    KeyValueRow("账期", "${group.billingDay?.let { "每月 $it 号出账" } ?: "待完善"} · ${group.dueOffsetDays?.let { "推后 $it 天还款" } ?: "待完善"}")
+                    KeyValueRow(
+                        "账期",
+                        "${group.billingDay?.let { "每月 $it 号出账" } ?: "待完善"} · " + when {
+                            group.dueMode == "fixed_day" -> group.dueDayOfMonth?.let { "每月 $it 号还款" } ?: "待完善"
+                            else -> group.dueOffsetDays?.let { "推后 $it 天还款" } ?: "待完善"
+                        },
+                    )
                     KeyValueRow("共享额度", Money.format(group.creditLimitCents))
-                    KeyValueRow("免息期（今日）", DateEngine.gracePeriod(group.billingDay, group.dueOffsetDays, today)?.let { "$it 天" } ?: "待完善")
+                    KeyValueRow("免息期（今日）", DateEngine.gracePeriod(group, today)?.let { "$it 天" } ?: "待完善")
                     Row(
                         Modifier.fillMaxWidth().clickable { onHistory(group.id) }.padding(vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,

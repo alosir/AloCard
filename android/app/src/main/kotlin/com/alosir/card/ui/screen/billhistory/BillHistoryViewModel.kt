@@ -51,7 +51,6 @@ class BillHistoryViewModel @Inject constructor(
             combine(billingGroups.observeGroup(groupId), bills.observeBills(groupId)) { group, billsList ->
             if (group == null) return@combine BillHistoryUiState()
             val today = DateProvider.today()
-            val offset = group.dueOffsetDays
 
             val rows = billsList.map { bill ->
                 val status = DateEngine.billStatus(
@@ -68,8 +67,13 @@ class BillHistoryViewModel @Inject constructor(
                 // 该期 billingDate + N 早于今天即逾期；已结清不显示。
                 // 改 N 不追溯历史（PRD F2.4 规则 4）——用当前 N 判定是既定口径的近似；
                 // 未设置 N（待完善组）时跳过时效判定。
-                val overdueText = if (offset != null && status != DateEngine.BILL_SETTLED) {
-                    val due = bill.billingDate.plusDays(offset.toLong())
+                val overdueText = if (group.hasCompleteSchedule && status != DateEngine.BILL_SETTLED) {
+                    val due = DateEngine.dueDateForBill(
+                        bill.billingDate,
+                        group.dueOffsetDays,
+                        group.dueMode,
+                        group.dueDayOfMonth,
+                    )
                     val days = ChronoUnit.DAYS.between(due, today)
                     if (days > 0) "已过期 $days 天" else null
                 } else {

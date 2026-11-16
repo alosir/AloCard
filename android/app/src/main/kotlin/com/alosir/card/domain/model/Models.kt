@@ -16,10 +16,14 @@ import java.time.LocalDate
 data class BillingGroup(
     val id: Long,
     val name: String,
-    /** 账单日 1–28；null = 待完善 */
+    /** 账单日 1–31，月末不存在时取最后一天；null = 待完善 */
     val billingDay: Int?,
-    /** 最后还款日偏移 N；null = 待完善 */
+    /** 推后还款天数；offset 模式使用 */
     val dueOffsetDays: Int?,
+    /** offset / fixed_day */
+    val dueMode: String = "offset",
+    /** 固定还款日 1–31；fixed_day 模式使用 */
+    val dueDayOfMonth: Int? = null,
     /** 信用额度（分）；null = 待完善 */
     val creditLimitCents: Long?,
     val bankName: String?,
@@ -69,7 +73,15 @@ data class GroupWithCards(
     val cards: List<Card>,
     /** 本期账单（最近一期）；尚无记录时为 null */
     val currentBill: Bill?,
-)
+    val dueMode: String = "offset",
+    val dueDayOfMonth: Int? = null,
+) {
+    val hasCompleteSchedule: Boolean
+        get() = billingDay != null && when (dueMode) {
+            "fixed_day" -> dueDayOfMonth != null
+            else -> dueOffsetDays != null
+        }
+}
 
 /** 账单组额度占用（额度明细页 P7） */
 data class GroupQuota(

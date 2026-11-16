@@ -269,7 +269,7 @@ fun HomeScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                "银行账单",
+                                "账单",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.SemiBold,
                             )

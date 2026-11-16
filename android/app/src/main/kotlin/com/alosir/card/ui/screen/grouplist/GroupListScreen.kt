@@ -78,7 +78,7 @@ fun GroupListScreen(
                 }
                 Spacer(Modifier.weight(1f))
                 Text(
-                    "账单 · ${ui.rows.size} 家银行",
+                    "${ui.rows.size} 个",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

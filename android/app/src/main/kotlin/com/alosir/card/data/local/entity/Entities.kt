@@ -29,13 +29,19 @@ data class BillingGroupEntity(
     @ColumnInfo(name = "name")
     val name: String,
 
-    /** 账单日 1–28；null = 待完善 */
+    /** 账单日 1–31，无此日期取月末最后一天；null = 待完善 */
     @ColumnInfo(name = "billing_day")
     val billingDay: Int? = null,
 
-    /** 最后还款日偏移 N（1–28）；null = 待完善。建表不带 DEFAULT——由 Repository 显式写 20 */
+    /** 推后还款天数；offset 模式使用 */
     @ColumnInfo(name = "due_offset_days")
     val dueOffsetDays: Int? = null,
+
+    @ColumnInfo(name = "due_mode", defaultValue = "offset")
+    val dueMode: String = "offset",
+
+    @ColumnInfo(name = "due_day_of_month")
+    val dueDayOfMonth: Int? = null,
 
     /** 信用额度（分）；null = 待完善 */
     @ColumnInfo(name = "credit_limit_cents")

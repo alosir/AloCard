@@ -105,6 +105,8 @@ class BackupManager @Inject constructor(
                         name = g.getString("name"),
                         billingDay = if (g.isNull("billingDay")) null else g.getInt("billingDay"),
                         dueOffsetDays = if (g.isNull("dueOffsetDays")) null else g.getInt("dueOffsetDays"),
+                        dueMode = g.optString("dueMode", "offset"),
+                        dueDayOfMonth = if (g.isNull("dueDayOfMonth")) null else g.getInt("dueDayOfMonth"),
                         creditLimitCents = if (g.isNull("creditLimitCents")) null else g.getLong("creditLimitCents"),
                         bankName = if (g.isNull("bankName")) null else g.getString("bankName"),
                         createdAt = now,
@@ -179,6 +181,8 @@ class BackupManager @Inject constructor(
                         put("name", g.name)
                         put("billingDay", g.billingDay)
                         put("dueOffsetDays", g.dueOffsetDays)
+                        put("dueMode", g.dueMode)
+                        put("dueDayOfMonth", g.dueDayOfMonth)
                         put("creditLimitCents", g.creditLimitCents)
                         put("bankName", g.bankName)
                     })

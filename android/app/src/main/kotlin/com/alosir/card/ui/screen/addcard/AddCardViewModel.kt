@@ -50,7 +50,8 @@ data class AddCardUiState(
     val billingDayError: String? = null,
     val dueOffsetDays: Int = 20,
     val dueInputMode: DueInputMode = DueInputMode.OFFSET_DAYS,
-    val fixedDayText: String = "",
+    val fixedDayText: String = "25",
+    val dueError: String? = null,
     val creditLimitText: String = "",
     // 结果
     val saving: Boolean = false,
@@ -58,7 +59,8 @@ data class AddCardUiState(
     val error: String? = null,
 ) {
     val canSave: Boolean
-        get() = !saving && cardNumberError == null && expiryError == null && billingDayError == null
+        get() = !saving && cardNumberError == null && expiryError == null &&
+            billingDayError == null && dueError == null
 }
 
 @HiltViewModel
@@ -112,6 +114,12 @@ class AddCardViewModel @Inject constructor(
                     groupNameOfCard = group?.name ?: "",
                     billingDayText = group?.billingDay?.toString() ?: "",
                     dueOffsetDays = group?.dueOffsetDays ?: 20,
+                    dueInputMode = if (group?.dueMode == "fixed_day") {
+                        DueInputMode.FIXED_DAY
+                    } else {
+                        DueInputMode.OFFSET_DAYS
+                    },
+                    fixedDayText = group?.dueDayOfMonth?.toString() ?: "25",
                     creditLimitText = group?.creditLimitCents?.let { c ->
                         Money.format(c).removePrefix("¥").replace(",", "")
                     } ?: "",
@@ -203,7 +211,7 @@ class AddCardViewModel @Inject constructor(
         val day = value.trim().toIntOrNull()
         val error = when {
             value.trim().isEmpty() -> null
-            day == null || day !in 1..28 -> "账单日须为 1–28 的整数"
+            day == null || day !in 1..31 -> "账单日须为 1–31 的整数"
             else -> null
         }
         _ui.update { it.copy(billingDayText = value, billingDayError = error) }
@@ -216,22 +224,27 @@ class AddCardViewModel @Inject constructor(
         persistDraft()
     }
 
-    fun onFixedDayChange(value: String) {
-        _ui.update { it.copy(fixedDayText = value, dueInputMode = DueInputMode.FIXED_DAY) }
+    fun onDueModeChange(mode: DueInputMode) {
+        _ui.update { it.copy(dueInputMode = mode, dueError = null) }
+        persistDraft()
     }
 
-    /** 「固定几号」失焦：按锚点（本期账单日）换算为 N（PRD 5.2.3） */
-    fun onFixedDayDone() {
-        val day = _ui.value.fixedDayText.trim().toIntOrNull()
-        val billingDay = _ui.value.billingDayText.trim().toIntOrNull()
-        if (day == null || day !in 1..28 || billingDay == null) return
-        val anchor = com.alosir.card.domain.DateEngine.currentBillingDate(
-            billingDay, com.alosir.card.domain.util.DateProvider.today()
-        )
-        var target = anchor.withDayOfMonth(day)
-        if (!target.isAfter(anchor)) target = target.plusMonths(1)
-        val n = java.time.temporal.ChronoUnit.DAYS.between(anchor, target).toInt()
-        _ui.update { it.copy(dueOffsetDays = n.coerceIn(1, 28)) }
+    fun onFixedDayChange(value: String) {
+        val filtered = value.filter(Char::isDigit).take(2)
+        val day = filtered.toIntOrNull()
+        val error = if (filtered.isNotEmpty() && (day == null || day !in 1..31)) {
+            "还款日须为 1–31 的整数"
+        } else {
+            null
+        }
+        _ui.update {
+            it.copy(
+                fixedDayText = filtered,
+                dueInputMode = DueInputMode.FIXED_DAY,
+                dueError = error,
+            )
+        }
+        persistDraft()
     }
 
     fun onCreditLimitChange(value: String) {
@@ -261,6 +274,14 @@ class AddCardViewModel @Inject constructor(
     fun save() {
         val state = _ui.value
         if (state.saving) return
+        val billingDay = state.billingDayText.trim().toIntOrNull()
+        val fixedDay = state.fixedDayText.trim().toIntOrNull()
+        if (billingDay != null && state.dueInputMode == DueInputMode.FIXED_DAY &&
+            (fixedDay == null || fixedDay !in 1..31)
+        ) {
+            _ui.update { it.copy(dueError = "还款日须为 1–31 的整数") }
+            return
+        }
 
         // 编辑模式：只更新卡片基础信息
         if (state.isEditing) {
@@ -285,7 +306,17 @@ class AddCardViewModel @Inject constructor(
                             id = state.groupIdOfCard,
                             name = state.groupNameOfCard.ifEmpty { state.bankName },
                             billingDay = editDay,
-                            dueOffsetDays = if (editDay != null) state.dueOffsetDays else null,
+                            dueOffsetDays = if (editDay != null && state.dueInputMode == DueInputMode.OFFSET_DAYS) {
+                                state.dueOffsetDays
+                            } else {
+                                null
+                            },
+                            dueMode = if (state.dueInputMode == DueInputMode.FIXED_DAY) "fixed_day" else "offset",
+                            dueDayOfMonth = if (editDay != null && state.dueInputMode == DueInputMode.FIXED_DAY) {
+                                fixedDay
+                            } else {
+                                null
+                            },
                             creditLimitCents = Money.parseToCents(state.creditLimitText),
                             bankName = state.bankName.takeIf { it.isNotBlank() },
                         )
@@ -306,8 +337,8 @@ class AddCardViewModel @Inject constructor(
                         ?: return@launch _ui.update { it.copy(saving = false, error = "未选择要加入的账单组") }
                     GroupChoice.NEW -> {
                         val day = state.billingDayText.trim().toIntOrNull()
-                        if (day != null && day !in 1..28) {
-                            _ui.update { it.copy(saving = false, billingDayError = "账单日须为 1–28 的整数") }
+                        if (day != null && day !in 1..31) {
+                            _ui.update { it.copy(saving = false, billingDayError = "账单日须为 1–31 的整数") }
                             return@launch
                         }
                         val name = state.groupName.trim().ifEmpty {
@@ -318,8 +349,17 @@ class AddCardViewModel @Inject constructor(
                                 id = 0L,
                                 name = name,
                                 billingDay = day,
-                                // 账单日填了而 N 缺省 → 20（PRD 4.2 默认值）
-                                dueOffsetDays = if (day != null) state.dueOffsetDays else null,
+                                dueOffsetDays = if (day != null && state.dueInputMode == DueInputMode.OFFSET_DAYS) {
+                                    state.dueOffsetDays
+                                } else {
+                                    null
+                                },
+                                dueMode = if (state.dueInputMode == DueInputMode.FIXED_DAY) "fixed_day" else "offset",
+                                dueDayOfMonth = if (day != null && state.dueInputMode == DueInputMode.FIXED_DAY) {
+                                    fixedDay
+                                } else {
+                                    null
+                                },
                                 creditLimitCents = Money.parseToCents(state.creditLimitText),
                                 bankName = state.bankName.trim().ifEmpty { null },
                             )

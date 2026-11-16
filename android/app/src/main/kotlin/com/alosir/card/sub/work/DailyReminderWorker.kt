@@ -86,9 +86,8 @@ class DailyReminderWorker(
         now: Long,
         ep: ReminderEntryPoint,
     ) {
-        val billingDay = group.billingDay ?: return
-        val offset = group.dueOffsetDays ?: return
-        val dueDays = DateEngine.daysUntilDue(billingDay, offset, today) ?: return
+        if (!group.hasCompleteSchedule) return
+        val dueDays = DateEngine.daysUntilDue(group, today) ?: return
         val bill = group.currentBill ?: return
         // 已结清的账单组不触发还款提醒（PRD F7.1 规则 5）
         if (bill.billAmountCents != null && bill.paidAmountCents >= bill.billAmountCents) return

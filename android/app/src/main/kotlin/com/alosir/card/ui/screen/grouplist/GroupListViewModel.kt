@@ -53,8 +53,8 @@ class GroupListViewModel @Inject constructor(
         billingGroups.observeGroupsWithCards().map { groups ->
             val today = com.alosir.card.domain.util.DateProvider.today()
             val rows = groups.map { group ->
-                val grace = DateEngine.gracePeriod(group.billingDay, group.dueOffsetDays, today)
-                val dueDays = DateEngine.daysUntilDue(group.billingDay, group.dueOffsetDays, today)
+                val grace = DateEngine.gracePeriod(group, today)
+                val dueDays = DateEngine.daysUntilDue(group, today)
                 val bill = group.currentBill
                 val billState = when (DateEngine.billStatus(
                     bill?.billAmountCents?.toDouble(), bill?.paidAmountCents?.toDouble(),
@@ -86,13 +86,14 @@ class GroupListViewModel @Inject constructor(
                         dueDays == null -> "补充账期后可用"
                         else -> "$dueDays 天后还款"
                     },
-                    dueSubText = DateEngine.dueDateOf(billDay, offset, today).let {
+                    dueSubText = (DateEngine.dueDateOf(group, today)
+                        ?: DateEngine.dueDateOf(billDay, offset, today)).let {
                         "${it.monthValue}/${it.dayOfMonth} 还款"
                     },
                     dueState = if (billState == BillState.SETTLED) DueState.NORMAL else rawDue,
                     billState = billState,
                     billDate = DateEngine.currentBillingDate(billDay, today),
-                    dueDate = DateEngine.dueDateOf(billDay, offset, today),
+                    dueDate = DateEngine.dueDateOf(group, today) ?: DateEngine.dueDateOf(billDay, offset, today),
                     billAmountCents = bill?.billAmountCents,
                     paidAmountCents = bill?.paidAmountCents ?: 0L,
                     creditLimitCents = group.creditLimitCents,

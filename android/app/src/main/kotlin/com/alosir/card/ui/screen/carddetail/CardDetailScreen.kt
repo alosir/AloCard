@@ -227,8 +227,12 @@ fun CardDetailScreen(
                 SectionTitle("账期")
                 if (ui.billingDay != null) {
                     KeyValueRow("账单日", "每月 ${ui.billingDay} 号")
-                    val offset = ui.dueOffsetDays ?: 20
-                    KeyValueRow("最后还款日", "推后 $offset 天（${ui.dueDate.monthValue} 月 ${ui.dueDate.dayOfMonth} 日）")
+                    val dueRule = if (ui.dueMode == "fixed_day") {
+                        "每月 ${ui.dueDayOfMonth ?: "—"} 号"
+                    } else {
+                        "推后 ${ui.dueOffsetDays ?: 20} 天"
+                    }
+                    KeyValueRow("最后还款日", "$dueRule（${ui.dueDate.monthValue} 月 ${ui.dueDate.dayOfMonth} 日）")
                     KeyValueRow("本期账单日", "${ui.billDate.monthValue} 月 ${ui.billDate.dayOfMonth} 日")
                     KeyValueRow("下期账单日", "${ui.nextBillDate.monthValue} 月 ${ui.nextBillDate.dayOfMonth} 日")
                 } else {

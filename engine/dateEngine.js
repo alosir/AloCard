@@ -9,15 +9,17 @@
  *  - 禁止使用 (date1 - date2) / 86400000 这种受夏令时影响的算法。
  *
  * 规则来源：CONTEXT.md（领域语言）、docs/adr/0001（免息期为今日视角的动态值）、
- * 0002（账单日 1–28、账单日当天消费计入本期）、0003（还款日 = 账单日 + N）、
+ * 账单日 1–31（无此日期取月末）、账单日当天消费计入本期；还款日支持推后 N 天或固定日期；
  * 0008（到期 ≠ 逾期）。
  */
 
 const MS_PER_DAY = 86400000;
 
-/** 账单日取值范围：银行实际只开 1–28 号，不做月末兜底（ADR 0002） */
+/** 账单日取值范围：1–31，无此日期取月末最后一天 */
 const MIN_BILLING_DAY = 1;
-const MAX_BILLING_DAY = 28;
+const MAX_BILLING_DAY = 31;
+const DUE_MODE_OFFSET = 'offset';
+const DUE_MODE_FIXED_DAY = 'fixed_day';
 
 /** 时效标记（规则 5） */
 const STATUS_NORMAL = 'normal';
@@ -76,7 +78,7 @@ function shiftMonth(year, month1, delta) {
   };
 }
 
-/** 校验并归一化账单日：必须是 1–28 的整数，否则抛错（规则 6） */
+/** 校验并归一化账单日：必须是 1–31 的整数，否则抛错（规则 6） */
 function normalizeBillingDay(billingDay) {
   if (typeof billingDay !== 'number' || !Number.isFinite(billingDay)) {
     throw new TypeError(`billingDay 必须是数字，收到 ${String(billingDay)}`);
@@ -86,7 +88,7 @@ function normalizeBillingDay(billingDay) {
   }
   if (billingDay < MIN_BILLING_DAY || billingDay > MAX_BILLING_DAY) {
     throw new RangeError(
-      `billingDay 必须落在 ${MIN_BILLING_DAY}–${MAX_BILLING_DAY}（银行账单日实际取值范围，不做月末兜底），收到 ${billingDay}`
+      `billingDay 必须落在 ${MIN_BILLING_DAY}–${MAX_BILLING_DAY}（1–31，无此日期取月末），收到 ${billingDay}`
     );
   }
   return billingDay;
@@ -205,40 +207,37 @@ function validateOffset(dueOffsetDays, billingDay, refDate) {
   return undefined;
 }
 
-/**
- * 规则 3：免息期（今日视角的动态值）
- * = (消费所属账单日 + N) − D
- * 数据不完整（缺 billingDay 或 dueOffsetDays）时返回 null（不可用标记）。
- */
-function gracePeriod(billingDay, dueOffsetDays, refDate) {
-  if (isMissing(billingDay) || isMissing(dueOffsetDays)) {
-    return null;
+function dueDateForBill(billDate, dueOffsetDays, dueMode, dueDayOfMonth) {
+  if (dueMode === DUE_MODE_FIXED_DAY) {
+    const fixedDay = normalizeBillingDay(dueDayOfMonth);
+    const sameMonth = billingDateOf(fixedDay, billDate.getFullYear(), billDate.getMonth() + 1);
+    if (dayNumber(sameMonth) >= dayNumber(billDate)) return sameMonth;
+    const next = shiftMonth(billDate.getFullYear(), billDate.getMonth() + 1, 1);
+    return billingDateOf(fixedDay, next.year, next.month);
   }
-  const day = normalizeBillingDay(billingDay);
-  const offset = normalizeOffset(dueOffsetDays);
-  const ref = parseRefDate(refDate);
-  validateOffset(offset, day, ref);
-  const bill = nextBillingDate(day, ref);
-  const due = addDays(bill, offset);
-  return daysBetween(ref, due);
+  return addDays(billDate, normalizeOffset(dueOffsetDays));
 }
 
-/**
- * 规则 4：距还款日
- * = (本期账单日 + N) − D
- * 数据不完整时返回 null（不可用标记）。
- */
-function daysUntilDue(billingDay, dueOffsetDays, refDate) {
-  if (isMissing(billingDay) || isMissing(dueOffsetDays)) {
-    return null;
-  }
+function gracePeriod(billingDay, dueOffsetDays, refDate, dueMode = DUE_MODE_OFFSET, dueDayOfMonth = null) {
+  if (isMissing(billingDay)) return null;
+  if (dueMode === DUE_MODE_OFFSET && isMissing(dueOffsetDays)) return null;
+  if (dueMode === DUE_MODE_FIXED_DAY && isMissing(dueDayOfMonth)) return null;
   const day = normalizeBillingDay(billingDay);
-  const offset = normalizeOffset(dueOffsetDays);
   const ref = parseRefDate(refDate);
-  validateOffset(offset, day, ref);
+  if (dueMode === DUE_MODE_OFFSET) validateOffset(dueOffsetDays, day, ref);
+  const bill = nextBillingDate(day, ref);
+  return daysBetween(ref, dueDateForBill(bill, dueOffsetDays, dueMode, dueDayOfMonth));
+}
+
+function daysUntilDue(billingDay, dueOffsetDays, refDate, dueMode = DUE_MODE_OFFSET, dueDayOfMonth = null) {
+  if (isMissing(billingDay)) return null;
+  if (dueMode === DUE_MODE_OFFSET && isMissing(dueOffsetDays)) return null;
+  if (dueMode === DUE_MODE_FIXED_DAY && isMissing(dueDayOfMonth)) return null;
+  const day = normalizeBillingDay(billingDay);
+  const ref = parseRefDate(refDate);
+  if (dueMode === DUE_MODE_OFFSET) validateOffset(dueOffsetDays, day, ref);
   const bill = currentBillingDate(day, ref);
-  const due = addDays(bill, offset);
-  return daysBetween(ref, due);
+  return daysBetween(ref, dueDateForBill(bill, dueOffsetDays, dueMode, dueDayOfMonth));
 }
 
 /**
@@ -254,11 +253,7 @@ function dueStatus(days) {
   return STATUS_OVERDUE;
 }
 
-/**
- * 规则 7：账单状态机（与时效标记正交）
- * 判定顺序：待录入 → 待还款 → 部分还款 → 已结清。
- * 金额为 0 且已还 0 归为「待还款」（billAmount !== null && paidAmount === 0 先命中）。
- */
+/** 规则 7：账单状态机（与时效标记正交） */
 function billStatus(billAmount, paidAmount) {
   if (billAmount === null || billAmount === undefined) {
     return BILL_PENDING_ENTRY;
@@ -276,6 +271,7 @@ function billStatus(billAmount, paidAmount) {
   if (paid < 0) {
     throw new RangeError(`paidAmount 不能为负数，收到 ${paid}`);
   }
+  if (billAmount === 0) return BILL_SETTLED;
   if (paid === 0) return BILL_DUE_UNPAID;
   if (paid < billAmount) return BILL_PARTIALLY_PAID;
   return BILL_SETTLED;

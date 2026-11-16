@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -142,10 +143,7 @@ private fun ExpiryBox(
     )
 }
 
-/**
- * 账单日选择 · 7 列 × 4 行日期矩阵（1–28 单选）。
- * 替代手输：点选即得，不可能输错范围（ADR-0002）。
- */
+/** 账单日选择 · 7 列，1–31 单选。 */
 @Composable
 fun BillingDayPicker(
     selected: Int?,
@@ -154,10 +152,9 @@ fun BillingDayPicker(
 ) {
     val colors = AloCardTheme.colors
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        repeat(4) { row ->
+        (1..31).chunked(7).forEach { days ->
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                repeat(7) { col ->
-                    val day = row * 7 + col + 1
+                days.forEach { day ->
                     val on = selected == day
                     val shape = RoundedCornerShape(10.dp)
                     Box(
@@ -180,6 +177,7 @@ fun BillingDayPicker(
                         )
                     }
                 }
+                repeat(7 - days.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }

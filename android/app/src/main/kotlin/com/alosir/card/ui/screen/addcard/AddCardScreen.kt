@@ -126,11 +126,20 @@ fun AddCardScreen(
                 tail = previewTail,
                 graceDays = null,
                 dueText = ui.billingDayText.trim().toIntOrNull()?.let { day ->
-                    val anchor = com.alosir.card.domain.DateEngine.currentBillingDate(
-                        day, com.alosir.card.domain.util.DateProvider.today()
-                    )
-                    val due = anchor.plusDays(ui.dueOffsetDays.toLong())
-                    "${due.monthValue}/${due.dayOfMonth}"
+                    val fixed = ui.dueInputMode == DueInputMode.FIXED_DAY
+                    val fixedDay = ui.fixedDayText.trim().toIntOrNull()
+                    if (fixed && fixedDay !in 1..31) {
+                        "—"
+                    } else {
+                        val due = com.alosir.card.domain.DateEngine.dueDateOf(
+                            day,
+                            if (fixed) null else ui.dueOffsetDays,
+                            if (fixed) "fixed_day" else "offset",
+                            if (fixed) fixedDay else null,
+                            com.alosir.card.domain.util.DateProvider.today(),
+                        )
+                        "${due.monthValue}/${due.dayOfMonth}"
+                    }
                 } ?: "—",
                 modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 14.dp),
             )
@@ -162,8 +171,13 @@ fun AddCardScreen(
                     )
                     if (ui.choice == GroupChoice.JOIN && ui.matchedGroup != null) {
                         val g = ui.matchedGroup!!
+                        val dueRule = if (g.dueMode == "fixed_day") {
+                            "每月 ${g.dueDayOfMonth ?: "—"} 号还款"
+                        } else {
+                            "推后 ${g.dueOffsetDays ?: "—"} 天还款"
+                        }
                         HintText(
-                            "继承：账单日 ${g.billingDay ?: "—"} 号 · 推后 ${g.dueOffsetDays ?: "—"} 天还款 · 额度 ${Money.format(g.creditLimitCents)}（不可单独修改）",
+                            "继承：账单日 ${g.billingDay ?: "—"} 号 · $dueRule · 额度 ${Money.format(g.creditLimitCents)}（不可单独修改）",
                             Modifier.padding(top = 4.dp),
                         )
                     }
@@ -259,33 +273,75 @@ fun AddCardScreen(
                         selected = ui.billingDayText.trim().toIntOrNull(),
                         onSelect = { viewModel.onBillingDayChange(it.toString()) },
                     )
+                    if ((ui.billingDayText.trim().toIntOrNull() ?: 0) >= 29) {
+                        HintText("无此日期的取月末最后一天", Modifier.padding(top = 6.dp))
+                    }
                     Spacer(Modifier.height(12.dp))
 
-                    // 最后还款日：步进器实时换算（ADR-0003）
                     Text(
                         text = "最后还款日",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(6.dp))
-                    Stepper(
-                        value = ui.dueOffsetDays,
-                        onChange = viewModel::onDueOffsetChange,
-                        min = 1,
-                        max = 28,
-                    )
+                    Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                        androidx.compose.material3.FilterChip(
+                            selected = ui.dueInputMode == DueInputMode.OFFSET_DAYS,
+                            onClick = { viewModel.onDueModeChange(DueInputMode.OFFSET_DAYS) },
+                            label = { Text("按账单日推后") },
+                        )
+                        androidx.compose.material3.FilterChip(
+                            selected = ui.dueInputMode == DueInputMode.FIXED_DAY,
+                            onClick = { viewModel.onDueModeChange(DueInputMode.FIXED_DAY) },
+                            label = { Text("每月固定") },
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
                     val day = ui.billingDayText.trim().toIntOrNull()
-                    if (day != null) {
-                        val anchor = com.alosir.card.domain.DateEngine.currentBillingDate(
-                            day, com.alosir.card.domain.util.DateProvider.today()
+                    if (ui.dueInputMode == DueInputMode.OFFSET_DAYS) {
+                        Stepper(
+                            value = ui.dueOffsetDays,
+                            onChange = viewModel::onDueOffsetChange,
+                            min = 1,
+                            max = 28,
                         )
-                        val due = anchor.plusDays(ui.dueOffsetDays.toLong())
-                        HintText(
-                            "账单日 $day 号 → 本期还款日 ${due.monthValue} 月 ${due.dayOfMonth} 日（推后 ${ui.dueOffsetDays} 天）",
-                            Modifier.padding(top = 6.dp),
-                        )
+                        if (day != null) {
+                            val due = com.alosir.card.domain.DateEngine.dueDateOf(
+                                day,
+                                ui.dueOffsetDays,
+                                com.alosir.card.domain.util.DateProvider.today(),
+                            )
+                            HintText(
+                                "账单日 $day 号 → 本期还款日 ${due.monthValue} 月 ${due.dayOfMonth} 日（推后 ${ui.dueOffsetDays} 天）",
+                                Modifier.padding(top = 6.dp),
+                            )
+                        }
                     } else {
-                        HintText("先填账单日，这里会实时换算还款日。", Modifier.padding(top = 6.dp))
+                        FilledField(
+                            value = ui.fixedDayText,
+                            onValueChange = viewModel::onFixedDayChange,
+                            label = "每月几号还款",
+                            placeholder = "如 25",
+                            numeric = true,
+                            isError = ui.dueError != null,
+                            supportingText = ui.dueError ?: "还款日固定，不再换算为推后天数；无此日期取月末。",
+                        )
+                        if (day != null && ui.dueError == null) {
+                            val fixedDay = ui.fixedDayText.trim().toIntOrNull()
+                            if (fixedDay != null) {
+                                val due = com.alosir.card.domain.DateEngine.dueDateOf(
+                                    day,
+                                    null,
+                                    "fixed_day",
+                                    fixedDay,
+                                    com.alosir.card.domain.util.DateProvider.today(),
+                                )
+                                HintText(
+                                    "每月 $fixedDay 号还款 → 本期 ${due.monthValue} 月 ${due.dayOfMonth} 日",
+                                    Modifier.padding(top = 6.dp),
+                                )
+                            }
+                        }
                     }
                     Spacer(Modifier.height(12.dp))
                     FilledField(

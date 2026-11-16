@@ -95,9 +95,8 @@ class DateEngineTest {
 
     @Test
     fun `用例5 - 闰年二月有29天但账单日仍是28日`() {
-        // 按规则 1 + ADR-0002（不做月末兜底）：账单日固定 28 号，
-        // 2028 年 2 月虽有 29 天，2 月账单日仍是 2028-02-28。
-        // 要得到 02-29 需要账单日为 29/30/31，已超出合法区间。
+        // 账单日固定 28 号时，2028 年 2 月账单日仍是 2028-02-28。
+        // 29/30/31 号则由对应规则单独取月末日期。
         assertEquals(LocalDate.of(2028, 2, 28), DateEngine.nextBillingDate(28, LocalDate.of(2028, 1, 29)))
         assertEquals(LocalDate.of(2028, 2, 28), DateEngine.nextBillingDate(28, LocalDate.of(2028, 2, 1)))
         assertEquals(LocalDate.of(2028, 2, 28), DateEngine.currentBillingDate(28, LocalDate.of(2028, 3, 1)))
@@ -148,8 +147,8 @@ class DateEngineTest {
         assertEquals("settled", DateEngine.billStatus(8320.0, 8320.0))
         // 超额还款也算已结清
         assertEquals("settled", DateEngine.billStatus(8320.0, 9000.0))
-        // 边界：账单金额 0 且已还 0 → 待还款（不是已结清）
-        assertEquals("due_unpaid", DateEngine.billStatus(0.0, 0.0))
+        // 边界：账单金额 0 → 无需还款，直接已结清
+        assertEquals("settled", DateEngine.billStatus(0.0, 0.0))
     }
 
     // ---------- 用例 9：非法输入 ----------
@@ -157,8 +156,9 @@ class DateEngineTest {
     @Test
     fun `用例9 - 非法输入抛错`() {
         assertIllegalArgument { DateEngine.normalizeBillingDay(0) }
-        assertIllegalArgument { DateEngine.normalizeBillingDay(29) }
-        assertIllegalArgument { DateEngine.normalizeBillingDay(31) }
+        assertEquals(29, DateEngine.normalizeBillingDay(29))
+        assertEquals(31, DateEngine.normalizeBillingDay(31))
+        assertIllegalArgument { DateEngine.normalizeBillingDay(32) }
         assertIllegalArgument { DateEngine.normalizeOffset(0) }
 
         // N 超过当前周期长度：1 月周期 31 天，N=32 非法
@@ -246,5 +246,26 @@ class DateEngineTest {
         assertEquals(LocalDate.of(2026, 10, 25), DateEngine.dueDateOf(5, 20, ref))
         // 下期账单日 11/5，+20 天 = 11/25（免息期终点）
         assertEquals(LocalDate.of(2026, 11, 25), DateEngine.nextDueDateOf(5, 20, ref))
+    }
+
+    @Test
+    fun `固定还款日按账单所在月份计算并支持跨月`() {
+        val ref = LocalDate.of(2026, 1, 21)
+        assertEquals(4, DateEngine.daysUntilDue(20, null, "fixed_day", 25, ref))
+        assertEquals(20, DateEngine.daysUntilDue(20, null, "fixed_day", 10, ref))
+        assertEquals(35, DateEngine.gracePeriod(20, null, "fixed_day", 25, ref))
+        assertEquals(48, DateEngine.gracePeriod(20, null, "fixed_day", 10, ref))
+        assertNull(DateEngine.daysUntilDue(20, null, "fixed_day", null, ref))
+    }
+
+    @Test
+    fun `账单日与固定还款日支持月末日期`() {
+        assertEquals(LocalDate.of(2026, 2, 28), DateEngine.nextBillingDate(30, LocalDate.of(2026, 2, 1)))
+        assertEquals(LocalDate.of(2028, 2, 29), DateEngine.nextBillingDate(30, LocalDate.of(2028, 2, 1)))
+        assertEquals(LocalDate.of(2026, 4, 30), DateEngine.nextBillingDate(31, LocalDate.of(2026, 4, 1)))
+        assertEquals(
+            LocalDate.of(2026, 2, 28),
+            DateEngine.dueDateOf(30, null, "fixed_day", 31, LocalDate.of(2026, 3, 1)),
+        )
     }
 }

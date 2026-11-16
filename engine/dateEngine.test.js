@@ -176,8 +176,8 @@ test('用例 8｜账单状态机四种与 0 金额边界', () => {
   assert.equal(billStatus(1000, 400), 'partially_paid');
   assert.equal(billStatus(1000, 1000), 'settled');
   assert.equal(billStatus(1000, 1200), 'settled');
-  // 边界：金额 0 且已还 0 → 待还款（不是已结清）
-  assert.equal(billStatus(0, 0), 'due_unpaid');
+  // 边界：金额 0 → 无需还款，直接已结清
+  assert.equal(billStatus(0, 0), 'settled');
   assert.equal(billStatus(0, 50), 'settled');
 });
 
@@ -185,8 +185,8 @@ test('用例 8｜账单状态机四种与 0 金额边界', () => {
 // 用例 9：非法输入
 // ---------------------------------------------------------------------------
 test('用例 9｜非法输入抛错', () => {
-  // billingDay 必须是 1–28 的整数
-  for (const badDay of [0, 29, 30, 31, -1, 2.5]) {
+  // billingDay 必须是 1–31 的整数
+  for (const badDay of [0, 32, -1, 2.5]) {
     assert.throws(() => nextBillingDate(badDay, '2026-03-06'), RangeError);
     assert.throws(() => currentBillingDate(badDay, '2026-03-06'), RangeError);
     assert.throws(() => cycleLength(badDay, '2026-03-06'), RangeError);
@@ -317,6 +317,20 @@ test('正交性｜账单状态与时效标记互不影响', () => {
   assert.equal(dueStatus(0), 'due'); // 已结清也可以是「到期」
   assert.equal(billStatus(1000, 0), 'due_unpaid');
   assert.equal(dueStatus(-5), 'overdue'); // 待还款也可以是「逾期」
+});
+
+test('固定还款日｜支持同月、跨月与数据不完整', () => {
+  assert.equal(daysUntilDue(20, null, '2026-01-21', 'fixed_day', 25), 4);
+  assert.equal(daysUntilDue(20, null, '2026-01-21', 'fixed_day', 10), 20);
+  assert.equal(gracePeriod(20, null, '2026-01-21', 'fixed_day', 25), 35);
+  assert.equal(gracePeriod(20, null, '2026-01-21', 'fixed_day', 10), 48);
+  assert.equal(daysUntilDue(20, null, '2026-01-21', 'fixed_day', null), null);
+});
+
+test('月末规则｜账单日支持 29/30/31 并取月末最后一天', () => {
+  assert.equal(ymd(nextBillingDate(30, '2026-02-01')), '2026-02-28');
+  assert.equal(ymd(nextBillingDate(30, '2028-02-01')), '2028-02-29');
+  assert.equal(ymd(nextBillingDate(31, '2026-04-01')), '2026-04-30');
 });
 
 // ---------------------------------------------------------------------------

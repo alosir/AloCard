@@ -10,9 +10,8 @@ import java.time.format.DateTimeFormatter
  * JS 版的单元测试用例在本工程的测试中以等价方式复跑。
  *
  * 规则来源：
- * - ADR-0002：账单日取值 1–28，不做月末兜底；账单日当日的消费计入以该账单日出账的本期账单；
- *   每个账单周期自上一账单日次日起算，至当前账单日结束。
- * - ADR-0003：最后还款日存储为「账单日 + N 天」。
+ * - 账单日取值 1–31，无此日期取月末最后一天；账单日当日的消费计入本期账单。
+ * - 还款日支持「账单日 + N 天」与「每月固定日期」两种模式。
  * - ADR-0001：免息期为「今日视角」的动态值。
  * - ADR-0008：距还款日 0 为「到期」而非「逾期」。
  *
@@ -23,9 +22,12 @@ import java.time.format.DateTimeFormatter
  */
 object DateEngine {
 
-    /** 账单日取值范围：银行实际只开 1–28 号（ADR-0002） */
+    /** 账单日取值范围：1–31，无此日期取月末最后一天 */
     const val MIN_BILLING_DAY = 1
-    const val MAX_BILLING_DAY = 28
+    const val MAX_BILLING_DAY = 31
+
+    const val DUE_MODE_OFFSET = "offset"
+    const val DUE_MODE_FIXED_DAY = "fixed_day"
 
     // ---------- 时效标记 ----------
 
@@ -60,12 +62,12 @@ object DateEngine {
     private fun daysInMonth(year: Int, month: Int): Int =
         java.time.YearMonth.of(year, month).lengthOfMonth()
 
-    /** 校验并归一化账单日：必须是 1–28 的整数 */
+    /** 校验并归一化账单日：必须是 1–31 的整数 */
     fun normalizeBillingDay(billingDay: Int?): Int {
         requireNotNull(billingDay) { "billingDay 不能为 null" }
         require(billingDay in MIN_BILLING_DAY..MAX_BILLING_DAY) {
             "billingDay 必须落在 $MIN_BILLING_DAY–$MAX_BILLING_DAY" +
-                "（银行账单日实际取值范围，不做月末兜底），收到 $billingDay"
+                "（1–31，无此日期取月末），收到 $billingDay"
         }
         return billingDay
     }
@@ -156,35 +158,45 @@ object DateEngine {
 
     // ---------- 规则 3 / 规则 4 ----------
 
-    /**
-     * 规则 3：免息期（今日视角的动态值）
-     * = (消费所属账单日 + N) − D
-     * 数据不完整（缺 billingDay 或 dueOffsetDays）时返回 null（不可用标记）。
-     */
-    fun gracePeriod(billingDay: Int?, dueOffsetDays: Int?, refDate: Any?): Int? {
-        if (isMissing(billingDay) || isMissing(dueOffsetDays)) return null
+    fun gracePeriod(billingDay: Int?, dueOffsetDays: Int?, refDate: Any?): Int? =
+        gracePeriod(billingDay, dueOffsetDays, DUE_MODE_OFFSET, null, refDate)
+
+    fun gracePeriod(
+        billingDay: Int?,
+        dueOffsetDays: Int?,
+        dueMode: String,
+        dueDayOfMonth: Int?,
+        refDate: Any?,
+    ): Int? {
+        if (isMissing(billingDay)) return null
+        if (dueMode == DUE_MODE_OFFSET && isMissing(dueOffsetDays)) return null
+        if (dueMode == DUE_MODE_FIXED_DAY && isMissing(dueDayOfMonth)) return null
         val day = normalizeBillingDay(billingDay)
-        val offset = normalizeOffset(dueOffsetDays)
         val ref = parseRefDate(refDate)
-        validateOffset(offset, day, ref)
+        if (dueMode == DUE_MODE_OFFSET) validateOffset(normalizeOffset(dueOffsetDays), day, ref)
         val bill = nextBillingDate(day, ref)
-        val due = bill.plusDays(offset.toLong())
+        val due = dueDateForBill(bill, dueOffsetDays, dueMode, dueDayOfMonth)
         return java.time.temporal.ChronoUnit.DAYS.between(ref, due).toInt()
     }
 
-    /**
-     * 规则 4：距还款日
-     * = (本期账单日 + N) − D
-     * 数据不完整时返回 null。
-     */
-    fun daysUntilDue(billingDay: Int?, dueOffsetDays: Int?, refDate: Any?): Int? {
-        if (isMissing(billingDay) || isMissing(dueOffsetDays)) return null
+    fun daysUntilDue(billingDay: Int?, dueOffsetDays: Int?, refDate: Any?): Int? =
+        daysUntilDue(billingDay, dueOffsetDays, DUE_MODE_OFFSET, null, refDate)
+
+    fun daysUntilDue(
+        billingDay: Int?,
+        dueOffsetDays: Int?,
+        dueMode: String,
+        dueDayOfMonth: Int?,
+        refDate: Any?,
+    ): Int? {
+        if (isMissing(billingDay)) return null
+        if (dueMode == DUE_MODE_OFFSET && isMissing(dueOffsetDays)) return null
+        if (dueMode == DUE_MODE_FIXED_DAY && isMissing(dueDayOfMonth)) return null
         val day = normalizeBillingDay(billingDay)
-        val offset = normalizeOffset(dueOffsetDays)
         val ref = parseRefDate(refDate)
-        validateOffset(offset, day, ref)
+        if (dueMode == DUE_MODE_OFFSET) validateOffset(normalizeOffset(dueOffsetDays), day, ref)
         val bill = currentBillingDate(day, ref)
-        val due = bill.plusDays(offset.toLong())
+        val due = dueDateForBill(bill, dueOffsetDays, dueMode, dueDayOfMonth)
         return java.time.temporal.ChronoUnit.DAYS.between(ref, due).toInt()
     }
 
@@ -200,15 +212,13 @@ object DateEngine {
         }
     }
 
-    /**
-     * 规则 7：账单状态机（纯金额判定，无日期维度）
-     * 判定顺序：待录入 → 待还款 → 部分还款 → 已结清。
-     */
+    /** 规则 7：账单状态机（纯金额判定，无日期维度） */
     fun billStatus(billAmount: Double?, paidAmount: Double?): String {
         if (billAmount == null) return BILL_PENDING_ENTRY
         require(billAmount >= 0) { "billAmount 不能为负数，收到 $billAmount" }
         val paid = paidAmount ?: 0.0
         require(paid >= 0) { "paidAmount 不能为负数，收到 $paid" }
+        if (billAmount == 0.0) return BILL_SETTLED
         return when {
             paid == 0.0 -> BILL_DUE_UNPAID
             paid < billAmount -> BILL_PARTIALLY_PAID
@@ -221,21 +231,65 @@ object DateEngine {
         return if (isMissing(billingDay) || isMissing(dueOffsetDays)) "incomplete" else "complete"
     }
 
-    // ---------- 便利方法 ----------
+    fun gracePeriod(group: com.alosir.card.domain.model.GroupWithCards, refDate: Any?): Int? =
+        gracePeriod(group.billingDay, group.dueOffsetDays, group.dueMode, group.dueDayOfMonth, refDate)
 
-    /** 本期账单的最后还款日 */
-    fun dueDateOf(billingDay: Int, dueOffsetDays: Int, refDate: Any?): LocalDate {
-        val day = normalizeBillingDay(billingDay)
-        val offset = normalizeOffset(dueOffsetDays)
-        val bill = currentBillingDate(day, refDate)
-        return bill.plusDays(offset.toLong())
+    fun daysUntilDue(group: com.alosir.card.domain.model.GroupWithCards, refDate: Any?): Int? =
+        daysUntilDue(group.billingDay, group.dueOffsetDays, group.dueMode, group.dueDayOfMonth, refDate)
+
+    fun dueDateOf(group: com.alosir.card.domain.model.GroupWithCards, refDate: Any?): LocalDate? {
+        val billingDay = group.billingDay ?: return null
+        return dueDateOf(billingDay, group.dueOffsetDays, group.dueMode, group.dueDayOfMonth, refDate)
     }
 
-    /** 下期账单的最后还款日（即免息期的终点） */
-    fun nextDueDateOf(billingDay: Int, dueOffsetDays: Int, refDate: Any?): LocalDate {
-        val day = normalizeBillingDay(billingDay)
-        val offset = normalizeOffset(dueOffsetDays)
-        val bill = nextBillingDate(day, refDate)
-        return bill.plusDays(offset.toLong())
+    fun nextDueDateOf(group: com.alosir.card.domain.model.GroupWithCards, refDate: Any?): LocalDate? {
+        val billingDay = group.billingDay ?: return null
+        return nextDueDateOf(billingDay, group.dueOffsetDays, group.dueMode, group.dueDayOfMonth, refDate)
+    }
+
+    // ---------- 便利方法 ----------
+
+    fun dueDateOf(billingDay: Int, dueOffsetDays: Int, refDate: Any?): LocalDate =
+        dueDateOf(billingDay, dueOffsetDays, DUE_MODE_OFFSET, null, refDate)
+
+    fun dueDateOf(
+        billingDay: Int,
+        dueOffsetDays: Int?,
+        dueMode: String,
+        dueDayOfMonth: Int?,
+        refDate: Any?,
+    ): LocalDate {
+        val bill = currentBillingDate(normalizeBillingDay(billingDay), refDate)
+        return dueDateForBill(bill, dueOffsetDays, dueMode, dueDayOfMonth)
+    }
+
+    fun nextDueDateOf(billingDay: Int, dueOffsetDays: Int, refDate: Any?): LocalDate =
+        nextDueDateOf(billingDay, dueOffsetDays, DUE_MODE_OFFSET, null, refDate)
+
+    fun nextDueDateOf(
+        billingDay: Int,
+        dueOffsetDays: Int?,
+        dueMode: String,
+        dueDayOfMonth: Int?,
+        refDate: Any?,
+    ): LocalDate {
+        val bill = nextBillingDate(normalizeBillingDay(billingDay), refDate)
+        return dueDateForBill(bill, dueOffsetDays, dueMode, dueDayOfMonth)
+    }
+
+    fun dueDateForBill(
+        billDate: LocalDate,
+        dueOffsetDays: Int?,
+        dueMode: String,
+        dueDayOfMonth: Int?,
+    ): LocalDate {
+        require(dueMode == DUE_MODE_OFFSET || dueMode == DUE_MODE_FIXED_DAY)
+        if (dueMode == DUE_MODE_FIXED_DAY) {
+            val fixedDay = normalizeBillingDay(dueDayOfMonth)
+            val sameMonth = billingDateOf(fixedDay, billDate)
+            if (!sameMonth.isBefore(billDate)) return sameMonth
+            return billingDateOf(fixedDay, billDate.plusMonths(1))
+        }
+        return billDate.plusDays(normalizeOffset(dueOffsetDays).toLong())
     }
 }

@@ -36,9 +36,9 @@ class DailySurfacesRefresher @Inject constructor(
 
         // 全部可用组按今日免息期降序；实际展示数量由每个组件的尺寸决定
         val ranked = groups
-            .filter { it.billingDay != null && it.dueOffsetDays != null }
+            .filter { it.hasCompleteSchedule }
             .map { group ->
-                group to DateEngine.gracePeriod(group.billingDay!!, group.dueOffsetDays!!, today)
+                group to DateEngine.gracePeriod(group, today)
             }
             .filter { it.second != null }
             .sortedByDescending { it.second }
@@ -51,9 +51,8 @@ class DailySurfacesRefresher @Inject constructor(
         // 每组一行；总额、笔数保留全部已录入且未还清账单的口径
         data class DueEntry(val dueDays: Int, val outstandingCents: Long, val groupId: Long, val bankName: String)
         val dueEntries = groups.mapNotNull { group ->
-            val billingDay = group.billingDay ?: return@mapNotNull null
-            val offset = group.dueOffsetDays ?: return@mapNotNull null
-            val dueDays = DateEngine.daysUntilDue(billingDay, offset, today) ?: return@mapNotNull null
+            if (!group.hasCompleteSchedule) return@mapNotNull null
+            val dueDays = DateEngine.daysUntilDue(group, today) ?: return@mapNotNull null
             val outstanding = group.currentBill?.outstandingCents ?: return@mapNotNull null
             if (outstanding <= 0L) return@mapNotNull null
             DueEntry(dueDays, outstanding, group.id, group.name)
@@ -83,9 +82,8 @@ class DailySurfacesRefresher @Inject constructor(
 
         // 2. 常驻通知：有临近到期 → 还款提醒内容；否则 → 免息期建议（DESIGN.md 5.9）
         val dueLines = groups.mapNotNull { group ->
-            val billingDay = group.billingDay ?: return@mapNotNull null
-            val offset = group.dueOffsetDays ?: return@mapNotNull null
-            val dueDays = DateEngine.daysUntilDue(billingDay, offset, today) ?: return@mapNotNull null
+            if (!group.hasCompleteSchedule) return@mapNotNull null
+            val dueDays = DateEngine.daysUntilDue(group, today) ?: return@mapNotNull null
             val bill = group.currentBill ?: return@mapNotNull null
             val settled = bill.billAmountCents != null && bill.paidAmountCents >= bill.billAmountCents
             if (settled || dueDays > 0) return@mapNotNull null
