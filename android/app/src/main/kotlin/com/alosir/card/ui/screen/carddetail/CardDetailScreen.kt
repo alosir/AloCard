@@ -68,12 +68,19 @@ fun CardDetailScreen(
     onEditGroup: (Long) -> Unit,
     onEditCard: (Long) -> Unit,
     onPinRequired: () -> Unit,
+    openAmountEntry: Boolean = false,
     viewModel: CardDetailViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.uiState(groupId).collectAsStateWithLifecycle()
     // 录入/还款改为本页内浮层，详情页留在原地不划出（项 3）
     var showAmountEntry by remember { mutableStateOf(false) }
     var showPaymentMark by remember { mutableStateOf(false) }
+
+    LaunchedEffect(openAmountEntry, ui.loading, ui.billAmountCents) {
+        if (openAmountEntry && !ui.loading && ui.billAmountCents == null) {
+            showAmountEntry = true
+        }
+    }
 
     // 金额浮窗允许截屏（不含完整卡号）；关闭后恢复详情页卡号保护
     val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity

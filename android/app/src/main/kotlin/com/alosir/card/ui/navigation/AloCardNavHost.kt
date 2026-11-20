@@ -32,6 +32,7 @@ import com.alosir.card.ui.screen.settings.SettingsScreen
 @Composable
 fun AloCardNavHost(
     launchGroupId: Long = -1L,
+    launchAmountEntry: Boolean = false,
     navController: NavHostController = rememberNavController(),
 ) {
     val backStackEntry = navController.currentBackStackEntryAsState()
@@ -133,6 +134,19 @@ fun AloCardNavHost(
                     onSetupPin = { navController.navigate(Routes.PIN_SETUP) },
                     onChangePin = { navController.navigate(Routes.PIN_CHANGE) },
                     onVerifyPin = { navController.navigate(Routes.PIN_VERIFY) },
+                    onIconLibrary = { navController.navigate(Routes.icons(false)) },
+                )
+            }
+            composable(
+                Routes.ICON_LIBRARY,
+                arguments = listOf(navArgument("select") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                }),
+            ) { entry ->
+                com.alosir.card.ui.screen.icons.IconLibraryScreen(
+                    selectionMode = entry.arguments?.getBoolean("select") == true,
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(Routes.SCAN) {
@@ -181,6 +195,7 @@ fun AloCardNavHost(
                     onEditGroup = { navController.navigate(Routes.groupForm(it)) },
                     onEditCard = { navController.navigate("${Routes.ADD_CARD}?cardId=$it") },
                     onPinRequired = { navController.navigate(Routes.PIN_VERIFY) },
+                    openAmountEntry = launchAmountEntry,
                 )
             }
             composable(
@@ -198,6 +213,7 @@ fun AloCardNavHost(
                     onBack = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() },
                     onScanCard = { navController.navigate(Routes.SCAN) },
+                    onPickIcon = { navController.navigate(Routes.icons(true)) },
                 )
             }
             composable(
@@ -229,6 +245,7 @@ fun AloCardNavHost(
                     onBack = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() },
                     onDeleted = { navController.popBackStack() },
+                    onPickIcon = { navController.navigate(Routes.icons(true)) },
                 )
             }
             composable(

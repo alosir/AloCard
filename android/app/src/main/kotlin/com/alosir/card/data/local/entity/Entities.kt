@@ -50,6 +50,9 @@ data class BillingGroupEntity(
     @ColumnInfo(name = "bank_name")
     val bankName: String? = null,
 
+    @ColumnInfo(name = "logo_key")
+    val logoKey: String? = null,
+
     @ColumnInfo(name = "created_at")
     val createdAt: Long,
 

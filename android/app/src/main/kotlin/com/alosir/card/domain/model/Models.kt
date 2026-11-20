@@ -27,6 +27,7 @@ data class BillingGroup(
     /** 信用额度（分）；null = 待完善 */
     val creditLimitCents: Long?,
     val bankName: String?,
+    val logoKey: String? = null,
 )
 
 /** 一张卡片（只含基础信息，不承载账期与额度） */
@@ -70,6 +71,7 @@ data class GroupWithCards(
     val dueOffsetDays: Int?,
     val creditLimitCents: Long?,
     val bankName: String?,
+    val logoKey: String? = null,
     val cards: List<Card>,
     /** 本期账单（最近一期）；尚无记录时为 null */
     val currentBill: Bill?,

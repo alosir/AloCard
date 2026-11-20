@@ -27,10 +27,11 @@ class AppNotifier @Inject constructor(
         channels.ensureCreated()
     }
 
-    private fun openAppIntent(groupId: Long = -1L): PendingIntent {
+    private fun openAppIntent(groupId: Long = -1L, openAmountEntry: Boolean = false): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             if (groupId > 0) putExtra(MainActivity.EXTRA_GROUP_ID, groupId)
+            putExtra(MainActivity.EXTRA_OPEN_AMOUNT_ENTRY, openAmountEntry)
         }
         return PendingIntent.getActivity(
             context,
@@ -66,7 +67,7 @@ class AppNotifier @Inject constructor(
             .setSmallIcon(R.drawable.ic_stat_alocard)
             .setContentTitle(groupName)
             .setContentText("账单已出账，请录入金额")
-            .setContentIntent(openAppIntent(groupId))
+            .setContentIntent(openAppIntent(groupId, openAmountEntry = true))
             .setAutoCancel(true)
             .build()
         manager.notify(ID_ENTRY_BASE + groupId.toInt(), notification)

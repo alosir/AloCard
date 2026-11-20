@@ -177,6 +177,7 @@ fun HomeScreen(
                             val (g, c) = carousel[page]
                             CreditCardFace(
                                 bankName = g.bankName,
+                                logoKey = g.logoKey,
                                 orgText = schemeLabelFor(c.scheme),
                                 tail = c.tail,
                                 graceDays = g.gracePeriodDays,
@@ -269,7 +270,7 @@ fun HomeScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                "账单",
+                                "卡片",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.SemiBold,
                             )
@@ -325,6 +326,7 @@ fun HomeScreen(
                         }
                         BankLedgerRow(
                             bankName = group.bankName,
+                            logoKey = group.logoKey,
                             subLabel = if (group.cards.size > 1) "${group.cards.size} 张卡合并出账"
                             else "尾号 ${group.cards.firstOrNull()?.tail ?: "????"}",
                             leftMain = leftMain,

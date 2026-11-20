@@ -268,4 +268,12 @@ class DateEngineTest {
             DateEngine.dueDateOf(30, null, "fixed_day", 31, LocalDate.of(2026, 3, 1)),
         )
     }
+
+    @Test
+    fun `账单日次日才开放录入`() {
+        val billDate = LocalDate.of(2026, 11, 20)
+        assertEquals(false, DateEngine.isBillEntryOpen(billDate, billDate))
+        assertEquals(true, DateEngine.isBillEntryOpen(billDate, billDate.plusDays(1)))
+        assertEquals(true, DateEngine.isBillEntryOpen(billDate, billDate.plusDays(10)))
+    }
 }

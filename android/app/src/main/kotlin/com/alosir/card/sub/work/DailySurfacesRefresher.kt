@@ -28,6 +28,7 @@ class DailySurfacesRefresher @Inject constructor(
     @ApplicationContext private val context: Context,
     private val billingGroups: BillingGroupRepository,
     private val notifier: AppNotifier,
+    private val icons: com.alosir.card.data.icon.IconRepository,
 ) {
 
     suspend fun refresh() {
@@ -49,13 +50,23 @@ class DailySurfacesRefresher @Inject constructor(
         )
 
         // 每组一行；总额、笔数保留全部已录入且未还清账单的口径
-        data class DueEntry(val dueDays: Int, val outstandingCents: Long, val groupId: Long, val bankName: String)
+        data class DueEntry(
+            val dueDays: Int,
+            val outstandingCents: Long,
+            val groupId: Long,
+            val bankName: String,
+            val logoKey: String?,
+            val customLogoPath: String?,
+        )
         val dueEntries = groups.mapNotNull { group ->
             if (!group.hasCompleteSchedule) return@mapNotNull null
             val dueDays = DateEngine.daysUntilDue(group, today) ?: return@mapNotNull null
             val outstanding = group.currentBill?.outstandingCents ?: return@mapNotNull null
             if (outstanding <= 0L) return@mapNotNull null
-            DueEntry(dueDays, outstanding, group.id, group.name)
+            val customPath = group.logoKey?.takeIf { it.startsWith("custom:") }?.let {
+                icons.getIcon(it.removePrefix("custom:"))?.croppedPath
+            }
+            DueEntry(dueDays, outstanding, group.id, group.name, group.logoKey, customPath)
         }
         val dueRows = dueEntries
             .sortedWith(compareBy({ if (it.dueDays < 0) 0 else 1 }, { it.dueDays }))
@@ -69,6 +80,8 @@ class DailySurfacesRefresher @Inject constructor(
                 }
                 com.alosir.card.widget.DueWidgetRow(
                     bankName = entry.bankName,
+                    logoKey = entry.logoKey,
+                    customLogoPath = entry.customLogoPath,
                     label = "${entry.bankName} · $label",
                     amountCents = entry.outstandingCents,
                     groupId = entry.groupId,

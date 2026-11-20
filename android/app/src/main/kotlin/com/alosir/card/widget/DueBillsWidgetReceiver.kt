@@ -19,6 +19,8 @@ import dagger.hilt.components.SingletonComponent
 
 data class DueWidgetRow(
     val bankName: String,
+    val logoKey: String? = null,
+    val customLogoPath: String? = null,
     val label: String,
     val amountCents: Long,
     val groupId: Long,
@@ -80,10 +82,19 @@ class DueBillsWidgetReceiver : AppWidgetProvider() {
             views.removeAllViews(R.id.due_rows)
             rows.take(limit).forEach { row ->
                 val item = RemoteViews(context.packageName, R.layout.widget_due_row).apply {
-                    setImageViewResource(
-                        R.id.due_logo,
-                        BankLogos.drawableFor(row.bankName) ?: R.drawable.bank_placeholder,
-                    )
+                    if (row.customLogoPath != null) {
+                        setImageViewBitmap(
+                            R.id.due_logo,
+                            android.graphics.BitmapFactory.decodeFile(row.customLogoPath),
+                        )
+                    } else {
+                        val logoBank = row.logoKey?.takeIf { it.startsWith("bank:") }
+                            ?.removePrefix("bank:") ?: row.bankName
+                        setImageViewResource(
+                            R.id.due_logo,
+                            BankLogos.drawableFor(logoBank) ?: R.drawable.bank_placeholder,
+                        )
+                    }
                     setTextViewText(R.id.due_label, row.label)
                     setTextViewText(R.id.due_amount, Money.format(row.amountCents))
                     val intent = Intent(context, MainActivity::class.java).apply {

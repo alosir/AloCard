@@ -20,6 +20,7 @@ import javax.inject.Inject
 data class BankBillRow(
     val groupId: Long,
     val bankName: String,
+    val logoKey: String? = null,
     val cardCount: Int,
     val firstTail: String,
     val hue: TabHue,
@@ -74,6 +75,7 @@ class GroupListViewModel @Inject constructor(
                 BankBillRow(
                     groupId = group.id,
                     bankName = group.bankName ?: group.name,
+                    logoKey = group.logoKey,
                     cardCount = group.cards.size,
                     firstTail = group.cards.firstOrNull()?.cardNumberLast4 ?: "????",
                     hue = tabHueFor(group.bankName),

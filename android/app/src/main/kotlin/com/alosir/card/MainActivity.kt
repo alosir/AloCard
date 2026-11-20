@@ -56,6 +56,7 @@ class MainActivity : FragmentActivity() {
         setContent {
             AloCardTheme {
                 val startGroupId = intent.getLongExtra(EXTRA_GROUP_ID, -1L)
+                val startAmountEntry = intent.getBooleanExtra(EXTRA_OPEN_AMOUNT_ENTRY, false)
                 val lockEnabled by remember { settings.observeLockEnabled() }
                     .collectAsState(initial = false)
                 val biometricEnabled by remember { settings.observeBiometricEnabled() }
@@ -64,10 +65,16 @@ class MainActivity : FragmentActivity() {
                 // 密码锁或指纹锁任一开启：未解锁会话一律先过闸门（指纹优先，PIN 兜底）
                 if (lockEnabled || biometricEnabled) {
                     AppLockGate(security = security, biometricEnabled = biometricEnabled) {
-                        AloCardNavHost(launchGroupId = startGroupId)
+                        AloCardNavHost(
+                            launchGroupId = startGroupId,
+                            launchAmountEntry = startAmountEntry,
+                        )
                     }
                 } else {
-                    AloCardNavHost(launchGroupId = startGroupId)
+                    AloCardNavHost(
+                            launchGroupId = startGroupId,
+                            launchAmountEntry = startAmountEntry,
+                        )
                 }
             }
         }
@@ -109,6 +116,7 @@ class MainActivity : FragmentActivity() {
     companion object {
         /** 通知点击直达的账单组 id（AppNotifier 注入） */
         const val EXTRA_GROUP_ID = "com.alosir.card.extra.GROUP_ID"
+        const val EXTRA_OPEN_AMOUNT_ENTRY = "com.alosir.card.extra.OPEN_AMOUNT_ENTRY"
 
         /** 会话有效期：后台超过 5 分钟需重新验证（PRD F10.2 规则 1） */
         private const val SESSION_TIMEOUT_MS = 5 * 60 * 1000L

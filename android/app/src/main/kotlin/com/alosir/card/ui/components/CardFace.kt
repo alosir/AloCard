@@ -55,6 +55,7 @@ fun schemeLabelFor(scheme: String): String = when (scheme) {
 @Composable
 fun CreditCardFace(
     bankName: String,
+    logoKey: String? = null,
     orgText: String,
     tail: String,
     graceDays: Int?,
@@ -75,16 +76,14 @@ fun CreditCardFace(
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // 银行小 logo（有素材时）；无素材直接文字，不占位
-                    BankLogos.drawableFor(bankName)?.let { res ->
-                        androidx.compose.foundation.Image(
-                            painter = androidx.compose.ui.res.painterResource(res),
-                            contentDescription = null,
-                            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-                            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(7.dp)),
-                        )
-                        Spacer(Modifier.width(8.dp))
-                    }
+                    GroupLogo(
+                        bankName = bankName,
+                        logoKey = logoKey,
+                        glyph = bankName.firstOrNull()?.toString() ?: "卡",
+                        color = Color.Transparent,
+                        size = 32.dp,
+                    )
+                    Spacer(Modifier.width(8.dp))
                     Column {
                         Text(
                             bankName,
@@ -150,6 +149,7 @@ fun BankChip(color: Color, glyph: String, modifier: Modifier = Modifier) {
 @Composable
 fun BankLedgerRow(
     bankName: String,
+    logoKey: String? = null,
     subLabel: String,
     /** 左侧大文字（金额/天数/状态文本，由调用方按业务规则生成） */
     leftMain: String,
@@ -181,7 +181,7 @@ fun BankLedgerRow(
     ) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                BankLogo(bankName = bankName, glyph = tabGlyph, color = tabColor)
+                BankLogo(bankName = bankName, glyph = tabGlyph, color = tabColor, logoKey = logoKey)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(

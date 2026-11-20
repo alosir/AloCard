@@ -14,12 +14,13 @@ import com.alosir.card.data.local.entity.AppSettingsEntity
 import com.alosir.card.data.local.entity.BillEntity
 import com.alosir.card.data.local.entity.BillingGroupEntity
 import com.alosir.card.data.local.entity.CardEntity
+import com.alosir.card.data.local.entity.CustomIconEntity
 import com.alosir.card.data.local.entity.NotificationLogEntity
 
 /**
  * AloCard 数据库（技术规范 §3）。
  *
- * 版本 2：账单组增加还款日模式与固定还款日。
+ * 版本 3：新增自定义图标与账单组 Logo 引用。
  * 任何 schema 变更必须：
  * 1. 版本号 +1；
  * 2. 提供显式 Migration 并加入 [MIGRATIONS]；
@@ -32,8 +33,9 @@ import com.alosir.card.data.local.entity.NotificationLogEntity
         BillEntity::class,
         AppSettingsEntity::class,
         NotificationLogEntity::class,
+        CustomIconEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class AloCardDatabase : RoomDatabase() {
@@ -44,6 +46,7 @@ abstract class AloCardDatabase : RoomDatabase() {
     abstract fun appSettingsDao(): AppSettingsDao
     abstract fun notificationLogDao(): NotificationLogDao
     abstract fun quotaDao(): QuotaDao
+    abstract fun customIconDao(): com.alosir.card.data.local.dao.CustomIconDao
 
     companion object {
         const val NAME = "alocard.db"
@@ -54,6 +57,17 @@ abstract class AloCardDatabase : RoomDatabase() {
                 override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE billing_groups ADD COLUMN due_mode TEXT NOT NULL DEFAULT 'offset'")
                     db.execSQL("ALTER TABLE billing_groups ADD COLUMN due_day_of_month INTEGER")
+                }
+            },
+            object : androidx.room.migration.Migration(2, 3) {
+                override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE billing_groups ADD COLUMN logo_key TEXT")
+                    db.execSQL(
+                        "CREATE TABLE IF NOT EXISTS custom_icons (" +
+                            "id TEXT NOT NULL PRIMARY KEY, original_path TEXT NOT NULL, cropped_path TEXT NOT NULL, " +
+                            "center_x REAL NOT NULL, center_y REAL NOT NULL, zoom REAL NOT NULL, " +
+                            "created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)"
+                    )
                 }
             },
         )

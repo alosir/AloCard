@@ -10,6 +10,7 @@ object Routes {
     const val QUOTA = "quota"         // P7 额度明细
     const val GROUPS = "groups"       // P14 账单组管理
     const val SETTINGS = "settings"   // P11 设置
+    const val ICON_LIBRARY = "icons?select={select}"
 
     // 卡片/账单组流程
     const val CARD_DETAIL = "card/{groupId}"     // P2 卡片详情（按账单组）
@@ -33,4 +34,5 @@ object Routes {
     fun groupForm(groupId: Long? = null) =
         if (groupId == null) "group/form?groupId=-1" else "group/form?groupId=$groupId"
     fun billHistory(groupId: Long) = "history/$groupId"
+    fun icons(select: Boolean = false) = "icons?select=$select"
 }

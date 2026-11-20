@@ -231,6 +231,7 @@ fun GroupDetailScreen(
                             bankName = group.bankName ?: group.name,
                             glyph = (group.bankName ?: group.name).first().toString(),
                             color = tabColorFor(group.bankName),
+                            logoKey = group.logoKey,
                         )
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {

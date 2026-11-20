@@ -46,6 +46,7 @@ data class GroupItem(
     val groupId: Long,
     val groupName: String,
     val bankName: String,
+    val logoKey: String? = null,
     val cards: List<CardItem>,
     val hue: TabHue,
     /** 免息期天数；数据不完整时为 null，此时行显示「待完善」 */
@@ -175,6 +176,7 @@ class HomeViewModel @Inject constructor(
                 groupId = group.id,
                 groupName = group.name,
                 bankName = group.bankName ?: group.name,
+                logoKey = group.logoKey,
                 cards = group.cards.map { card ->
                     CardItem(
                         cardId = card.id,

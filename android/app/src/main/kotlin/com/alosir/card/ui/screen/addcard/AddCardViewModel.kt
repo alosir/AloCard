@@ -34,6 +34,7 @@ data class AddCardUiState(
     val expiryYm: String = "",
     val expiryError: String? = null,
     val bankName: String = "",
+    val logoKey: String? = null,
     val cardScheme: String = "unknown",
     /** 银行/卡组织来自号段自动识别（用户覆盖后清除标注，PRD F1.1） */
     val detectedFromNumber: Boolean = false,
@@ -108,6 +109,7 @@ class AddCardViewModel @Inject constructor(
                     cardName = card.cardLabel ?: "",
                     expiryYm = card.expiryYm ?: "",
                     bankName = card.bankName ?: group?.bankName ?: "",
+                    logoKey = group?.logoKey,
                     cardScheme = card.cardScheme,
                     choice = GroupChoice.NEW,
                     groupIdOfCard = card.groupId,
@@ -196,7 +198,12 @@ class AddCardViewModel @Inject constructor(
     }
 
     fun onBankNameChange(value: String) {
-        _ui.update { it.copy(bankName = value, detectedFromNumber = false) }
+        _ui.update { it.copy(bankName = value, detectedFromNumber = false, logoKey = null) }
+        persistDraft()
+    }
+
+    fun onLogoSelected(key: String) {
+        _ui.update { it.copy(logoKey = key) }
         persistDraft()
     }
 
@@ -318,6 +325,7 @@ class AddCardViewModel @Inject constructor(
                                 null
                             },
                             creditLimitCents = Money.parseToCents(state.creditLimitText),
+                            logoKey = state.logoKey,
                             bankName = state.bankName.takeIf { it.isNotBlank() },
                         )
                     )
@@ -361,6 +369,7 @@ class AddCardViewModel @Inject constructor(
                                     null
                                 },
                                 creditLimitCents = Money.parseToCents(state.creditLimitText),
+                            logoKey = state.logoKey,
                                 bankName = state.bankName.trim().ifEmpty { null },
                             )
                         )

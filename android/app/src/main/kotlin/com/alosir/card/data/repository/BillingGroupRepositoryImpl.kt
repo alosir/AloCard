@@ -7,6 +7,7 @@ import com.alosir.card.data.local.dao.QuotaDao
 import com.alosir.card.data.local.entity.BillEntity
 import com.alosir.card.data.local.entity.BillingGroupEntity
 import com.alosir.card.data.local.entity.CardEntity
+import com.alosir.card.domain.DateEngine
 import com.alosir.card.domain.model.Bill
 import com.alosir.card.domain.model.BillingGroup
 import com.alosir.card.domain.model.Card
@@ -43,7 +44,13 @@ class BillingGroupRepositoryImpl @Inject constructor(
                 group.toDomain(
                     cards = cards.filter { it.groupId == group.id },
                     latestBill = bills
-                        .filter { it.groupId == group.id }
+                        .filter {
+                            it.groupId == group.id &&
+                                DateEngine.isBillEntryOpen(
+                                    LocalDate.ofEpochDay(it.billingDate),
+                                    com.alosir.card.domain.util.DateProvider.today(),
+                                )
+                        }
                         .maxByOrNull { it.billingDate },
                 )
             }
@@ -57,7 +64,12 @@ class BillingGroupRepositoryImpl @Inject constructor(
         ) { group, cards, bills ->
             group?.toDomain(
                 cards = cards,
-                latestBill = bills.maxByOrNull { it.billingDate },
+                latestBill = bills.filter {
+                    DateEngine.isBillEntryOpen(
+                        LocalDate.ofEpochDay(it.billingDate),
+                        com.alosir.card.domain.util.DateProvider.today(),
+                    )
+                }.maxByOrNull { it.billingDate },
             )
         }
 
@@ -75,6 +87,7 @@ class BillingGroupRepositoryImpl @Inject constructor(
                 dueDayOfMonth = group.dueDayOfMonth,
                 creditLimitCents = group.creditLimitCents,
                 bankName = group.bankName,
+                logoKey = group.logoKey,
                 createdAt = now,
                 updatedAt = now,
             )
@@ -92,6 +105,7 @@ class BillingGroupRepositoryImpl @Inject constructor(
                 dueDayOfMonth = group.dueDayOfMonth,
                 creditLimitCents = group.creditLimitCents,
                 bankName = group.bankName,
+                logoKey = group.logoKey,
                 updatedAt = System.currentTimeMillis(),
             )
         )
@@ -141,6 +155,7 @@ class BillingGroupRepositoryImpl @Inject constructor(
         dueDayOfMonth = dueDayOfMonth,
         creditLimitCents = creditLimitCents,
         bankName = bankName,
+        logoKey = logoKey,
     )
 
     private fun BillingGroupEntity.toDomain(
@@ -155,6 +170,7 @@ class BillingGroupRepositoryImpl @Inject constructor(
         dueDayOfMonth = dueDayOfMonth,
         creditLimitCents = creditLimitCents,
         bankName = bankName,
+        logoKey = logoKey,
         cards = cards.map { it.toDomain() },
         currentBill = latestBill?.toDomain(),
     )

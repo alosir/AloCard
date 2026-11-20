@@ -35,7 +35,7 @@ class BillRepositoryImpl @Inject constructor(
         val groups = groupDao.observeAll().first()
         for (group in groups) {
             val billingDay = group.billingDay ?: continue
-            val current = DateEngine.currentBillingDate(billingDay, today)
+            val current = DateEngine.currentBillingDate(billingDay, today.minusDays(1))
             val currentEpoch = current.toEpochDay()
 
             var cursor = billDao.maxBillingDate(group.id)

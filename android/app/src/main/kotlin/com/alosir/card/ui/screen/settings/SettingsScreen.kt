@@ -61,6 +61,7 @@ fun SettingsScreen(
     onSetupPin: () -> Unit,
     onChangePin: () -> Unit,
     onVerifyPin: () -> Unit,
+    onIconLibrary: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -282,6 +283,11 @@ fun SettingsScreen(
                 HintText(
                     "卡号识别来自离线号段表，结果仅供参考；长尾银行可能识别不到，可手动覆盖。",
                     Modifier.padding(top = 4.dp),
+                )
+                SettingsRow(
+                    title = "图标库",
+                    hint = "内置银行图标与自定义图标",
+                    onClick = onIconLibrary,
                 )
                 KeyValueRow("数据位置", "仅本机（Room 数据库）")
                 HintText(

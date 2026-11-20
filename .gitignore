@@ -11,6 +11,7 @@ docs/
 android/local.properties
 android/.gradle/
 android/.kotlin/
+.android-sdk/
 android/build/
 android/app/build/
 android/captures/

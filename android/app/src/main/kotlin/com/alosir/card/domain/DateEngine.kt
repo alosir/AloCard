@@ -212,6 +212,10 @@ object DateEngine {
         }
     }
 
+    /** 账单日包含在本期，次日才开放金额录入 */
+    fun isBillEntryOpen(billingDate: LocalDate, refDate: Any?): Boolean =
+        billingDate.isBefore(parseRefDate(refDate))
+
     /** 规则 7：账单状态机（纯金额判定，无日期维度） */
     fun billStatus(billAmount: Double?, paidAmount: Double?): String {
         if (billAmount == null) return BILL_PENDING_ENTRY

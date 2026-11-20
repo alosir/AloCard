@@ -20,6 +20,7 @@ data class GroupFormUiState(
     val isEditing: Boolean = false,
     val groupId: Long = -1L,
     val name: String = "",
+    val logoKey: String? = null,
     val nameError: String? = null,
     val billingDayText: String = "",
     val billingDayError: String? = null,
@@ -65,6 +66,7 @@ class GroupFormViewModel @Inject constructor(
                     isEditing = true,
                     groupId = group.id,
                     name = group.name,
+                    logoKey = group.logoKey,
                     billingDayText = group.billingDay?.toString() ?: "",
                     dueMode = group.dueMode,
                     dueOffsetDays = group.dueOffsetDays ?: 20,
@@ -76,7 +78,15 @@ class GroupFormViewModel @Inject constructor(
     }
 
     fun onNameChange(value: String) =
-        _ui.update { it.copy(name = value, nameError = if (value.isBlank()) "名称不能为空" else null) }
+        _ui.update {
+            it.copy(
+                name = value,
+                logoKey = null,
+                nameError = if (value.isBlank()) "名称不能为空" else null,
+            )
+        }
+
+    fun onLogoSelected(key: String) = _ui.update { it.copy(logoKey = key) }
 
     fun onBillingDayChange(value: String) {
         val day = value.trim().toIntOrNull()
@@ -144,6 +154,7 @@ class GroupFormViewModel @Inject constructor(
                     null
                 },
                 creditLimitCents = Money.parseToCents(state.creditLimitText),
+                logoKey = state.logoKey,
                 bankName = state.name.trim().ifEmpty { null },
             )
             if (state.isEditing) {

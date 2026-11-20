@@ -7,6 +7,7 @@ import com.alosir.card.data.local.AloCardDatabase
 import com.alosir.card.data.local.entity.BillEntity
 import com.alosir.card.data.local.entity.BillingGroupEntity
 import com.alosir.card.data.local.entity.CardEntity
+import com.alosir.card.data.local.entity.CustomIconEntity
 import com.alosir.card.data.security.CryptoManager
 import com.alosir.card.data.security.SecurityManager
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -93,6 +94,7 @@ class BackupManager @Inject constructor(
             // 清空（外键级联顺序：先子表）
             db.billDao().deleteAll()
             db.cardDao().deleteAll()
+            db.customIconDao().deleteAll()
             db.billingGroupDao().deleteAll()
 
             val groupsJson = json.getJSONArray("groups")
@@ -109,6 +111,7 @@ class BackupManager @Inject constructor(
                         dueDayOfMonth = if (g.isNull("dueDayOfMonth")) null else g.getInt("dueDayOfMonth"),
                         creditLimitCents = if (g.isNull("creditLimitCents")) null else g.getLong("creditLimitCents"),
                         bankName = if (g.isNull("bankName")) null else g.getString("bankName"),
+                        logoKey = if (g.isNull("logoKey")) null else g.getString("logoKey"),
                         createdAt = now,
                         updatedAt = now,
                     )
@@ -151,6 +154,31 @@ class BackupManager @Inject constructor(
                     )
                 )
             }
+
+            val iconsJson = json.optJSONArray("customIcons")
+            if (iconsJson != null) {
+                val directory = File(context.filesDir, "icons").apply { mkdirs() }
+                for (i in 0 until iconsJson.length()) {
+                    val icon = iconsJson.getJSONObject(i)
+                    val id = icon.getString("id")
+                    val original = File(directory, "$id-original.png")
+                    val cropped = File(directory, "$id-cropped.png")
+                    original.writeBytes(Base64.decode(icon.getString("original"), Base64.DEFAULT))
+                    cropped.writeBytes(Base64.decode(icon.getString("cropped"), Base64.DEFAULT))
+                    db.customIconDao().insert(
+                        CustomIconEntity(
+                            id = id,
+                            originalPath = original.absolutePath,
+                            croppedPath = cropped.absolutePath,
+                            centerX = icon.getDouble("centerX").toFloat(),
+                            centerY = icon.getDouble("centerY").toFloat(),
+                            zoom = icon.getDouble("zoom").toFloat(),
+                            createdAt = icon.optLong("createdAt", now),
+                            updatedAt = icon.optLong("updatedAt", now),
+                        )
+                    )
+                }
+            }
         }
 
         // 恢复安全密码凭据（备份是完整替换语义）
@@ -170,6 +198,7 @@ class BackupManager @Inject constructor(
         val groups = db.billingGroupDao().getAllOnce()
         val cards = db.cardDao().getAllOnce()
         val bills = db.billDao().getAllOnce()
+        val icons = db.customIconDao().getAllOnce()
 
         return JSONObject().apply {
             put("version", VERSION)
@@ -185,6 +214,7 @@ class BackupManager @Inject constructor(
                         put("dueDayOfMonth", g.dueDayOfMonth)
                         put("creditLimitCents", g.creditLimitCents)
                         put("bankName", g.bankName)
+                        put("logoKey", g.logoKey)
                     })
                 }
             })
@@ -208,6 +238,20 @@ class BackupManager @Inject constructor(
                         put("billingDate", b.billingDate)
                         put("amountCents", b.billAmountCents)
                         put("paidCents", b.paidAmountCents)
+                    })
+                }
+            })
+            put("customIcons", JSONArray().apply {
+                icons.forEach { icon ->
+                    put(JSONObject().apply {
+                        put("id", icon.id)
+                        put("original", Base64.encodeToString(File(icon.originalPath).readBytes(), Base64.DEFAULT))
+                        put("cropped", Base64.encodeToString(File(icon.croppedPath).readBytes(), Base64.DEFAULT))
+                        put("centerX", icon.centerX.toDouble())
+                        put("centerY", icon.centerY.toDouble())
+                        put("zoom", icon.zoom.toDouble())
+                        put("createdAt", icon.createdAt)
+                        put("updatedAt", icon.updatedAt)
                     })
                 }
             })

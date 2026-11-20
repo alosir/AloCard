@@ -85,7 +85,10 @@ class AddBillViewModel @Inject constructor(
         billingGroups.observeGroupsWithCards().map { groups ->
             val today = DateProvider.today()
             groups
-                .filter { it.currentBill?.billAmountCents == null && it.billingDay != null }
+                .filter {
+                    it.currentBill?.billAmountCents == null && it.billingDay != null &&
+                        it.currentBill?.billingDate?.isBefore(today) == true
+                }
                 .map { g ->
                     val date = g.currentBill?.billingDate
                         ?: DateEngine.currentBillingDate(g.billingDay!!, today)

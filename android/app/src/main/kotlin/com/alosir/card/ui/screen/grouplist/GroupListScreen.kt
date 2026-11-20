@@ -149,6 +149,7 @@ fun GroupListScreen(
                         }
                         BankLedgerRow(
                             bankName = row.bankName,
+                            logoKey = row.logoKey,
                             subLabel = if (row.cardCount > 1) "${row.cardCount} 张卡合并出账" else "尾号 ${row.firstTail}",
                             leftMain = leftMain,
                             leftSub = leftSub,

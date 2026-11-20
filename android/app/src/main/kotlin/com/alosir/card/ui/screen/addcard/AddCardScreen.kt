@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
@@ -62,10 +63,19 @@ fun AddCardScreen(
     onBack: () -> Unit,
     onSaved: (Long) -> Unit,
     onScanCard: () -> Unit = {},
+    onPickIcon: () -> Unit = {},
     viewModel: AddCardViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val colors = AloCardTheme.colors
+
+    LaunchedEffect(com.alosir.card.ui.screen.icons.IconSelectionBus.selectedLogoKey) {
+        val key = com.alosir.card.ui.screen.icons.IconSelectionBus.selectedLogoKey
+        if (key != null) {
+            viewModel.onLogoSelected(key)
+            com.alosir.card.ui.screen.icons.IconSelectionBus.selectedLogoKey = null
+        }
+    }
 
     // ---- 实时卡面识别（CameraX + ML Kit，识别到即自动回填） ----
     val context = LocalContext.current
@@ -122,6 +132,7 @@ fun AddCardScreen(
             val previewTail = if (digits.length >= 4) digits.takeLast(4) else "••••"
             CreditCardFace(
                 bankName = ui.bankName.ifEmpty { "待识别银行" },
+                logoKey = ui.logoKey,
                 orgText = schemeLabel(ui.cardScheme),
                 tail = previewTail,
                 graceDays = null,
@@ -253,6 +264,21 @@ fun AddCardScreen(
                         label = "银行",
                         placeholder = "选填，识别不到时手动填写",
                         supportingText = if (ui.detectedFromNumber) "根据卡号识别，可修改" else null,
+                        trailingIcon = {
+                            androidx.compose.foundation.layout.Box(
+                                Modifier
+                                    .size(28.dp)
+                                    .clickable(onClick = onPickIcon),
+                            ) {
+                                com.alosir.card.ui.components.GroupLogo(
+                                    bankName = ui.bankName,
+                                    logoKey = ui.logoKey,
+                                    glyph = "银",
+                                    color = androidx.compose.ui.graphics.Color.Transparent,
+                                    size = 28.dp,
+                                )
+                            }
+                        },
                     )
                 }
                 Spacer(Modifier.height(4.dp))
@@ -285,15 +311,15 @@ fun AddCardScreen(
                     )
                     Spacer(Modifier.height(6.dp))
                     Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-                        androidx.compose.material3.FilterChip(
+                        ChoiceChip(
                             selected = ui.dueInputMode == DueInputMode.OFFSET_DAYS,
+                            text = "按账单日推后",
                             onClick = { viewModel.onDueModeChange(DueInputMode.OFFSET_DAYS) },
-                            label = { Text("按账单日推后") },
                         )
-                        androidx.compose.material3.FilterChip(
+                        ChoiceChip(
                             selected = ui.dueInputMode == DueInputMode.FIXED_DAY,
+                            text = "每月固定",
                             onClick = { viewModel.onDueModeChange(DueInputMode.FIXED_DAY) },
-                            label = { Text("每月固定") },
                         )
                     }
                     Spacer(Modifier.height(10.dp))
