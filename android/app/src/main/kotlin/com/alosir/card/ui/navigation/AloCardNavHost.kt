@@ -193,7 +193,6 @@ fun AloCardNavHost(
                     groupId = groupId,
                     onBack = { navController.popBackStack() },
                     onEditGroup = { navController.navigate(Routes.groupForm(it)) },
-                    onEditCard = { navController.navigate("${Routes.ADD_CARD}?cardId=$it") },
                     onPinRequired = { navController.navigate(Routes.PIN_VERIFY) },
                     openAmountEntry = launchAmountEntry,
                 )

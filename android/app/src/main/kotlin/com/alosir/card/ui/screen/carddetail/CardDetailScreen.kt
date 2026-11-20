@@ -66,7 +66,6 @@ fun CardDetailScreen(
     groupId: Long,
     onBack: () -> Unit,
     onEditGroup: (Long) -> Unit,
-    onEditCard: (Long) -> Unit,
     onPinRequired: () -> Unit,
     openAmountEntry: Boolean = false,
     viewModel: CardDetailViewModel = hiltViewModel(),
@@ -286,7 +285,6 @@ fun CardDetailScreen(
                             }
                         },
                         onHide = { viewModel.hideCardNumber() },
-                        onClick = { onEditCard(card.cardId) },
                     )
                     Spacer(Modifier.height(4.dp))
                 }
@@ -325,14 +323,12 @@ private fun CardInfoRow(
     revealed: String?,
     onReveal: () -> Unit,
     onHide: () -> Unit,
-    onClick: () -> Unit,
 ) {
     val colors = AloCardTheme.colors
     Column(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
             .padding(vertical = 6.dp),
     ) {
         Text(

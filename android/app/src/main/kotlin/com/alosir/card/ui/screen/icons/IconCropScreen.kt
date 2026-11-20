@@ -9,8 +9,8 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -68,8 +68,8 @@ fun IconCropScreen(
             BoxWithConstraints(
                 Modifier
                     .align(Alignment.CenterHorizontally)
-                    .fillMaxWidth()
                     .weight(1f)
+                    .aspectRatio(1f)
                     .clip(CircleShape)
                     .background(colors.paperSunken)
                     .border(2.dp, colors.gold, CircleShape)
