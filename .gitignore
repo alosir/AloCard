@@ -29,9 +29,10 @@ releases/
 *.apk
 *.aab
 
-# ---- 设计原型（设计稿属本地材料，仓库仅保留代码与文档）----
+# ---- 设计原型与本地宣传素材（不进仓库）----
 prototype/
 .prototype-work/
+alocard-promo/
 
 # ---- 系统与崩溃杂物 ----
 replay_pid*.log
