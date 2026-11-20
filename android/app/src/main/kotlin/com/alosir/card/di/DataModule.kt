@@ -61,6 +61,9 @@ object DataModule {
     fun provideQuotaDao(db: AloCardDatabase): QuotaDao = db.quotaDao()
 
     @Provides
+    fun provideCustomIconDao(db: AloCardDatabase): com.alosir.card.data.local.dao.CustomIconDao = db.customIconDao()
+
+    @Provides
     @Singleton
     fun provideCryptoManager(): CryptoManager = CryptoManager()
 }
