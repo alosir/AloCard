@@ -1,0 +1,162 @@
+{
+ "size": "1080x1920",
+ "every": 0.2,
+ "safe": {
+  "t": 230.39999999999998,
+  "r": 0,
+  "b": 230.39999999999998,
+  "l": 0
+ },
+ "issues": [
+  {
+   "kind": "tiny",
+   "what": "\"信用卡\" is 24px (1.3% of the frame height): unreadable on a phone unless it is a deliberate micro-annotation",
+   "t0": 0,
+   "t1": 4
+  },
+  {
+   "kind": "tiny",
+   "what": "\"免息期\" is 26px (1.4% of the frame height): unreadable on a phone unless it is a deliberate micro-annotation",
+   "t0": 0,
+   "t1": 4
+  },
+  {
+   "kind": "overlap",
+   "what": "\"光大银行\" and \"民生银行\" are drawn on top of each other",
+   "t0": 0,
+   "t1": 0.8
+  },
+  {
+   "kind": "overlap",
+   "what": "\"华夏银行\" and \"民生银行\" are drawn on top of each other",
+   "t0": 0,
+   "t1": 0.6
+  },
+  {
+   "kind": "overlap",
+   "what": "\"•••• •••• •••• 2319\" and \"•••• •••• •••• 8776\" are drawn on top of each other",
+   "t0": 0,
+   "t1": 4
+  },
+  {
+   "kind": "overlap",
+   "what": "\"•••• •••• •••• 1177\" and \"•••• •••• •••• 2319\" are drawn on top of each other",
+   "t0": 0,
+   "t1": 0.8
+  },
+  {
+   "kind": "overlap",
+   "what": "\"光大银行\" and \"华夏银行\" are drawn on top of each other",
+   "t0": 0,
+   "t1": 0.6
+  },
+  {
+   "kind": "overlap",
+   "what": "\"•••• •••• •••• 1177\" and \"•••• •••• •••• 8776\" are drawn on top of each other",
+   "t0": 0,
+   "t1": 0.8
+  },
+  {
+   "kind": "overlap",
+   "what": "\"•••• •••• •••• 2319\" and \"免息期\" are drawn on top of each other",
+   "t0": 0.8,
+   "t1": 4
+  },
+  {
+   "kind": "overlap",
+   "what": "\"? 天\" and \"•••• •••• •••• 2319\" are drawn on top of each other",
+   "t0": 0.8,
+   "t1": 4
+  },
+  {
+   "kind": "safe",
+   "what": "\"alocard\" sits in the top safe zone (platform UI covers it)",
+   "t0": 3.8,
+   "t1": 8.2
+  },
+  {
+   "kind": "tiny",
+   "what": "\"11 / 10\" is 30px (1.6% of the frame height): unreadable on a phone unless it is a deliberate micro-annotation",
+   "t0": 3.8,
+   "t1": 10.2
+  },
+  {
+   "kind": "safe",
+   "what": "\"免息期 · 按今天算\" sits in the top safe zone (platform UI covers it)",
+   "t0": 7.6,
+   "t1": 14.6
+  },
+  {
+   "kind": "tiny",
+   "what": "\"免息期\" is 26px (1.4% of the frame height): unreadable on a phone unless it is a deliberate micro-annotation",
+   "t0": 7.8,
+   "t1": 14.6
+  },
+  {
+   "kind": "tiny",
+   "what": "\"标准白金 ·••• 2319\" is 26px (1.4% of the frame height): unreadable on a phone unless it is a deliberate micro-annotation",
+   "t0": 7.8,
+   "t1": 14.6
+  },
+  {
+   "kind": "tiny",
+   "what": "\"阳光白金 ·••• 8776\" is 26px (1.4% of the frame height): unreadable on a phone unless it is a deliberate micro-annotation",
+   "t0": 7.8,
+   "t1": 14.6
+  },
+  {
+   "kind": "tiny",
+   "what": "\"精英尊尚 ·••• 1177\" is 26px (1.4% of the frame height): unreadable on a phone unless it is a deliberate micro-annotation",
+   "t0": 7.8,
+   "t1": 14.6
+  },
+  {
+   "kind": "tiny",
+   "what": "\"按免息期排序\" is 28px (1.5% of the frame height): unreadable on a phone unless it is a deliberate micro-annotation",
+   "t0": 8.4,
+   "t1": 14.6
+  },
+  {
+   "kind": "tiny",
+   "what": "\"今日推荐\" is 21px (1.1% of the frame height): unreadable on a phone unless it is a deliberate micro-annotation",
+   "t0": 10.4,
+   "t1": 14.6
+  },
+  {
+   "kind": "tiny",
+   "what": "\"距还款日 · 12 天\" is 29px (1.5% of the frame height): unreadable on a phone unless it is a deliberate micro-annotation",
+   "t0": 10.6,
+   "t1": 14.6
+  },
+  {
+   "kind": "tiny",
+   "what": "\"11 / 10\" is 30px (1.6% of the frame height): unreadable on a phone unless it is a deliberate micro-annotation",
+   "t0": 10.8,
+   "t1": 14.4
+  },
+  {
+   "kind": "tiny",
+   "what": "\"今\" is 30px (1.6% of the frame height): unreadable on a phone unless it is a deliberate micro-annotation",
+   "t0": 14,
+   "t1": 19.8
+  },
+  {
+   "kind": "safe",
+   "what": "\"完整卡号 AES-256-GCM 加密存储 · 查看需 4 位安全密码 · 支持指纹解锁\" sits in the bottom safe zone (platform UI covers it)",
+   "t0": 20,
+   "t1": 24.6
+  },
+  {
+   "kind": "tiny",
+   "what": "\"完整卡号 AES-256-GCM 加密存储 · 查看需 4 位安全密码 · 支持指纹解锁\" is 24px (1.3% of the frame height): unreadable on a phone unless it is a deliberate micro-annotation",
+   "t0": 20,
+   "t1": 24.6
+  },
+  {
+   "kind": "tiny",
+   "what": "\"最长免息 49 天 · 今日排序\" is 28px (1.5% of the frame height): unreadable on a phone unless it is a deliberate micro-annotation",
+   "t0": 24.2,
+   "t1": 26.6
+  }
+ ]
+}
