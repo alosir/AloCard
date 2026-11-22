@@ -12,6 +12,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.alosir.card.R
+import com.alosir.card.domain.BankLogoNameResolver
 
 object BankLogos {
     private val primary = listOf(
@@ -54,8 +55,8 @@ object BankLogos {
     val builtInBanks: List<Pair<String, Int>> = primary
 
     fun drawableFor(bankName: String?): Int? {
-        val name = bankName?.trim()?.removePrefix("中国")?.takeIf { it.isNotEmpty() } ?: return null
-        return byBank[name]
+        val name = BankLogoNameResolver.resolve(bankName, byBank.keys)
+        return name?.let(byBank::get)
     }
 }
 
