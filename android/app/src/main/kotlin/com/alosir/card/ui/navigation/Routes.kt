@@ -11,6 +11,7 @@ object Routes {
     const val GROUPS = "groups"       // P14 账单组管理
     const val SETTINGS = "settings"   // P11 设置
     const val ICON_LIBRARY = "icons?select={select}"
+    const val BIN_TABLE = "bins"
 
     // 卡片/账单组流程
     const val CARD_DETAIL = "card/{groupId}"     // P2 卡片详情（按账单组）

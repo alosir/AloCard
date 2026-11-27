@@ -62,6 +62,7 @@ fun SettingsScreen(
     onChangePin: () -> Unit,
     onVerifyPin: () -> Unit,
     onIconLibrary: () -> Unit = {},
+    onBinTable: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -113,7 +114,7 @@ fun SettingsScreen(
     val logMaxHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 2 / 3).dp
 
     val updateHint = when (val r = updateCheck) {
-        null -> "从 GitHub 获取最新版本"
+        null -> "从Github获取最新版本（可能需科学上网）"
         UpdateCheckResult.Checking -> "正在检查…"
         UpdateCheckResult.Latest -> "已是最新版本"
         is UpdateCheckResult.Failed -> "检查失败：${r.message}"
@@ -279,9 +280,13 @@ fun SettingsScreen(
             }
             Section {
                 SectionTitle("数据")
-                KeyValueRow("号段表快照", ui.binSnapshot ?: "未知")
+                SettingsRow(
+                    title = "号段表快照",
+                    hint = ui.binSnapshot ?: "未知",
+                    onClick = onBinTable,
+                )
                 HintText(
-                    "卡号识别来自离线号段表，结果仅供参考；长尾银行可能识别不到，可手动覆盖。",
+                    "号段识别银行仅供参考，识别不到或有误可自行修改",
                     Modifier.padding(top = 4.dp),
                 )
                 SettingsRow(
@@ -289,9 +294,9 @@ fun SettingsScreen(
                     hint = "内置银行图标与自定义图标",
                     onClick = onIconLibrary,
                 )
-                KeyValueRow("数据位置", "仅本机（Room 数据库）")
+                KeyValueRow("数据位置", "仅本机")
                 HintText(
-                    "AloCard 不连接银行、没有账号、不出网。卡号以 AES-256-GCM 加密存储。",
+                    "本APP无需账号，数据不上网，本机加密存储",
                     Modifier.padding(top = 4.dp),
                 )
             }
@@ -317,7 +322,6 @@ fun SettingsScreen(
                 )
                 SettingsRow(
                     title = "更新日志",
-                    hint = "本版本的更新内容",
                     onClick = { viewModel.loadChangelog(); showChangelog = true },
                 )
             }

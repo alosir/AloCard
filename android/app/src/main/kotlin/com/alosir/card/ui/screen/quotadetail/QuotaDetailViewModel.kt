@@ -2,12 +2,14 @@ package com.alosir.card.ui.screen.quotadetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.alosir.card.domain.QuotaAggregation
 import com.alosir.card.domain.model.CreditTotals
 import com.alosir.card.domain.model.GroupQuota
 import com.alosir.card.domain.repository.BillingGroupRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -20,5 +22,6 @@ class QuotaDetailViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CreditTotals(0L, 0L))
 
     val rows: StateFlow<List<GroupQuota>> = billingGroups.observeGroupQuotas()
+        .map(QuotaAggregation::byBank)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 }

@@ -135,6 +135,12 @@ fun AloCardNavHost(
                     onChangePin = { navController.navigate(Routes.PIN_CHANGE) },
                     onVerifyPin = { navController.navigate(Routes.PIN_VERIFY) },
                     onIconLibrary = { navController.navigate(Routes.icons(false)) },
+                    onBinTable = { navController.navigate(Routes.BIN_TABLE) },
+                )
+            }
+            composable(Routes.BIN_TABLE) {
+                com.alosir.card.ui.screen.bintable.BinTableScreen(
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(

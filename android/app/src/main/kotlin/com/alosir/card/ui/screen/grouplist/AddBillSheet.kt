@@ -59,6 +59,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -81,8 +82,11 @@ class AddBillViewModel @Inject constructor(
     private val bills: BillRepository,
 ) : ViewModel() {
 
+    private val refreshTrigger = MutableStateFlow(0)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val candidates: StateFlow<List<AddBillCandidate>> =
-        billingGroups.observeGroupsWithCards().map { groups ->
+        refreshTrigger.flatMapLatest { billingGroups.observeGroupsWithCards() }.map { groups ->
             val today = DateProvider.today()
             groups
                 .filter {
@@ -118,6 +122,7 @@ class AddBillViewModel @Inject constructor(
         saving.value = false
         amountText.value = ""
         amountError.value = null
+        refreshTrigger.value = refreshTrigger.value + 1
     }
 
     fun onAmountChange(value: String) {

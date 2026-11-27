@@ -2,6 +2,7 @@ package com.alosir.card.ui.screen.paymentmark
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.alosir.card.domain.OddAmount
 import com.alosir.card.domain.repository.BillingGroupRepository
 import com.alosir.card.domain.repository.BillRepository
 import com.alosir.card.domain.util.Money
@@ -30,6 +31,9 @@ data class PaymentMarkUiState(
     val saving: Boolean = false,
     val saved: Boolean = false,
 ) {
+    val remainingCents: Long
+        get() = ((billAmountCents ?: 0L) - (paidAmountCents ?: 0L)).coerceAtLeast(0L)
+
     /** 动态提示：「本次标记 ¥X，当前已还 ¥Y / 账单 ¥Z」 */
     val liveHint: String
         get() {
@@ -56,6 +60,7 @@ class PaymentMarkViewModel @Inject constructor(
             billingGroups.observeGroup(groupId).first()
                 ?.let { group ->
                     val bill = group.currentBill
+                    val remaining = ((bill?.billAmountCents ?: 0L) - (bill?.paidAmountCents ?: 0L)).coerceAtLeast(0L)
                     _ui.update {
                         it.copy(
                             loading = false,
@@ -64,6 +69,7 @@ class PaymentMarkViewModel @Inject constructor(
                             billDate = bill?.billingDate,
                             billAmountCents = bill?.billAmountCents,
                             paidAmountCents = bill?.paidAmountCents,
+                            amountText = if (remaining > 0L) formatInputCents(remaining) else "",
                             blockedReason = if (bill?.billAmountCents == null) {
                                 "请先录入账单金额，再标记还款"
                             } else null,
@@ -99,12 +105,19 @@ class PaymentMarkViewModel @Inject constructor(
     }
 
     /** 「全部」：一键填入剩余待还（账单 − 已还） */
-    fun fillAllOutstanding() {
-        val remain = ((billAmountCentsOrZero()) - (_ui.value.paidAmountCents ?: 0L)).coerceAtLeast(0L)
-        onAmountChange(Money.format(remain).removePrefix("¥").replace(",", ""))
+    fun fillAllOutstanding() = onAmountChange(formatInputCents(_ui.value.remainingCents))
+
+    fun fillOdd(clickIndex: Int) {
+        OddAmount.forClick(_ui.value.remainingCents, clickIndex)?.let {
+            onAmountChange(formatInputCents(it))
+        }
     }
 
-    private fun billAmountCentsOrZero(): Long = _ui.value.billAmountCents ?: 0L
+    fun oddAmountForClick(clickIndex: Int): Long? =
+        OddAmount.forClick(_ui.value.remainingCents, clickIndex)
+
+    private fun formatInputCents(cents: Long): String =
+        Money.format(cents).removePrefix("¥").replace(",", "")
 
     fun markSavedHandled() = _ui.update { it.copy(saved = false) }
 }

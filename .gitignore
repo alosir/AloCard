@@ -33,6 +33,7 @@ releases/
 prototype/
 .prototype-work/
 alocard-promo/
+bin-data/research-bins.md
 
 # ---- 系统与崩溃杂物 ----
 replay_pid*.log

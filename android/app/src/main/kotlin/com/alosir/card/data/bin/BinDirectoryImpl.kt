@@ -26,6 +26,7 @@ class BinDirectoryImpl @Inject constructor(
     private var banks: Map<String, String> = emptyMap()
     private var bins6: Map<String, List<Triple<String, String?, Int?>>> = emptyMap()
     private var bins8: Map<String, List<Triple<String, String?, Int?>>> = emptyMap()
+    private var allEntries: List<BinDirectory.BinEntry> = emptyList()
     private var snapshot: String? = null
 
     init {
@@ -62,11 +63,22 @@ class BinDirectoryImpl @Inject constructor(
             }
             bins6 = map6
             bins8 = map8
+            allEntries = (bins6.keys + bins8.keys)
+                .flatMap { prefix ->
+                    val list = bins6[prefix] ?: bins8[prefix] ?: emptyList()
+                    list.mapNotNull { row ->
+                        banks[row.first]?.let { bank ->
+                            BinDirectory.BinEntry(prefix, bank, row.second, row.third)
+                        }
+                    }
+                }
+                .sortedWith(compareBy({ it.bankName }, { it.prefix }))
         }.onFailure {
             // 表损坏或缺失：识别整体降级为「不可用」，不影响其他功能
             banks = emptyMap()
             bins6 = emptyMap()
             bins8 = emptyMap()
+            allEntries = emptyList()
         }
     }
 
@@ -87,6 +99,8 @@ class BinDirectoryImpl @Inject constructor(
             )
         }
     }
+
+    override fun entries(): List<BinDirectory.BinEntry> = allEntries
 
     override fun snapshot(): String? = snapshot
 

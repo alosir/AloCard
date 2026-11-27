@@ -8,6 +8,14 @@ package com.alosir.card.domain.repository
  */
 interface BinDirectory {
 
+    /** 号段表中的一条记录 */
+    data class BinEntry(
+        val prefix: String,
+        val bankName: String,
+        val cardType: String?,
+        val length: Int?,
+    )
+
     /** 识别结果 */
     data class BankMatch(
         /** 发卡行名称（中文） */
@@ -23,6 +31,9 @@ interface BinDirectory {
      * 先精确匹配 8 位 IIN，再退回 6 位 BIN；未命中返回 null。
      */
     fun lookup(digits: String): BankMatch?
+
+    /** 全部号段记录，用于设置页预览 */
+    fun entries(): List<BinEntry>
 
     /** 号段表快照时间（ISO 日期串），用于界面标注数据时点 */
     fun snapshot(): String?

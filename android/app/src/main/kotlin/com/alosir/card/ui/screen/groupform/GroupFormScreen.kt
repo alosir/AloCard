@@ -84,7 +84,7 @@ fun GroupFormScreen(
                 FilledField(
                     value = ui.name,
                     onValueChange = viewModel::onNameChange,
-                    label = "银行（标准维度）",
+                    label = "银行",
                     placeholder = "如「招商银行」",
                     isError = ui.nameError != null,
                     supportingText = ui.nameError ?: "同银行多卡共享额度（取最高，不叠加）；合并出账的卡共用账期。",

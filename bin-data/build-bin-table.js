@@ -24,6 +24,7 @@ const path = require('node:path');
 
 const DATA_DIR = __dirname;
 const BIN_CSV = path.join(DATA_DIR, 'bcbc-bin-cn.csv');
+const OFFICIAL_ADDITIONS_CSV = path.join(DATA_DIR, 'bcbc-bin-cn-official-additions.csv');
 const NAME_CSV = path.join(DATA_DIR, 'bcbc-bank-names-cn.csv');
 const OUT_FILE = path.join(DATA_DIR, '..', 'engine', 'bin-table.json');
 
@@ -105,9 +106,20 @@ function stringifyTable(table) {
 
 function main() {
   const binRows = readCsv(BIN_CSV);
+  const additionRows = fs.existsSync(OFFICIAL_ADDITIONS_CSV)
+    ? readCsv(OFFICIAL_ADDITIONS_CSV)
+    : [];
   const nameRows = readCsv(NAME_CSV);
   const banks = buildBankNames(nameRows);
-  const { bins, skipped } = buildBins(binRows);
+
+  const seen = new Set(binRows.map((row) => [row.bin, row.bank, row.type, row.length].join(',')));
+  const uniqueAdditions = additionRows.filter((row) => {
+    const key = [row.bin, row.bank, row.type, row.length].join(',');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const { bins, skipped } = buildBins([...binRows, ...uniqueAdditions]);
 
   // 统计：是否有 BIN 引用了没有中文名的银行代码
   const missingNames = new Set();
@@ -123,11 +135,12 @@ function main() {
 
   const table = {
     meta: {
-      source: 'bcbc-bin-cn.csv + bcbc-bank-names-cn.csv',
+      source: 'bcbc-bin-cn.csv + bcbc-bin-cn-official-additions.csv + bcbc-bank-names-cn.csv',
       sourceProject: 'bcbc (中国银行卡 BIN 码数据集)',
       license: 'MIT',
-      snapshot: '2026-10-24',
-      snapshotNote: '快照时间为 bin-data/ 下 CSV 文件的落盘日期；上游仓库的提交时间可能更早。',
+      snapshot: '2026-11-27',
+      snapshotNote: '快照时间为本次构建日期；社区底表与官方补充来源分别见 bin-data/ 下 CSV。',
+      officialAdditions: uniqueAdditions.length,
       generatedBy: 'bin-data/build-bin-table.js',
       binCount: six,
       iinCount: eight,
@@ -147,6 +160,7 @@ function main() {
   console.log(`写入 ${OUT_FILE}`);
   console.log(`  6 位 BIN ${six} 个 / 8 位 IIN ${eight} 个 / 记录 ${rowsIn} 条`);
   console.log(`  银行中文名 ${Object.keys(banks).length} 条`);
+  console.log(`  官方来源补充 ${uniqueAdditions.length} 条`);
   console.log(`  跳过非 6/8 位或非法条目 ${skipped} 条`);
   console.log(`  文件大小 ${sizeKb} KB`);
   if (missingNames.size > 0) {

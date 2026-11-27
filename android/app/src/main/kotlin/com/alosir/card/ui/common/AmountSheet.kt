@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -48,7 +49,9 @@ fun AmountSheetScaffold(
     error: String? = null,
     infoLine: String? = null,
     fieldHint: String? = null,
-    onFillAll: (() -> Unit)? = null,
+    quickActionLabel: String? = null,
+    quickAction: (() -> Unit)? = null,
+    onClear: (() -> Unit)? = null,
     confirmText: String,
     onConfirm: () -> Unit,
     confirmEnabled: Boolean,
@@ -109,17 +112,33 @@ fun AmountSheetScaffold(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.align(Alignment.CenterStart).padding(start = 14.dp),
                 )
-                if (onFillAll != null) {
-                    Text(
-                        "全部",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = colors.goldText,
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .clickable { onFillAll() }
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                    )
+                Row(
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (onClear != null && amountText.isNotEmpty() && amountText != "0") {
+                        Icon(
+                            Icons.Default.Clear,
+                            contentDescription = "清空金额",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clickable { onClear() },
+                        )
+                    }
+                    if (quickActionLabel != null && quickAction != null) {
+                        Text(
+                            quickActionLabel,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.goldText,
+                            modifier = Modifier
+                                .clickable { quickAction() }
+                                .padding(start = 10.dp, top = 8.dp, bottom = 8.dp),
+                        )
+                    }
                 }
             }
             HintText(

@@ -53,7 +53,7 @@ fun QuotaDetailScreen(
                     remainCents = totals.remainCents,
                 )
                 HintText(
-                    "同银行合并出账共享额度，不重复计数；剩余可用为偏乐观估算。",
+                    "同一银行有多张卡额度不累加，只取最高值",
                     Modifier.padding(horizontal = 20.dp).padding(bottom = 10.dp),
                 )
             }
@@ -89,7 +89,7 @@ fun QuotaDetailScreen(
                             modifier = Modifier.weight(1f),
                         )
                         Text(
-                            "共享额度 ${row.creditLimitCents?.let { Money.format(it) } ?: "—"}",
+                            "额度 ${row.creditLimitCents?.let { Money.format(it) } ?: "—"}",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
