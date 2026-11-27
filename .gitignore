@@ -35,6 +35,9 @@ prototype/
 alocard-promo/
 bin-data/research-bins.md
 
+# ---- 官网源码（本地维护，部署到阿里云，不进仓库）----
+website/
+
 # ---- 系统与崩溃杂物 ----
 replay_pid*.log
 hs_err_pid*.log

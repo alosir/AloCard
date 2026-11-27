@@ -70,3 +70,12 @@ else
   echo "  1) 在浏览器打开 https://github.com/alosir/AloCard/releases/new?tag=${TAG} 上传 $APK_OUT"
   echo "  2) 提供有效 PAT 后重跑本脚本自动发布"
 fi
+
+# 6. 同步 APK 与官网到阿里云（card.alosir.com，每次发版必做）
+echo "→ 同步 APK 与官网到阿里云…"
+if bash scripts/deploy-website.sh "$VERSION_NAME"; then
+  echo "→ 阿里云镜像已更新：https://card.alosir.com/download/AloCard-latest.apk"
+else
+  echo "⚠ 阿里云同步失败（GitHub Release 已完成）。请手动补跑：bash scripts/deploy-website.sh $VERSION_NAME" >&2
+  exit 1
+fi

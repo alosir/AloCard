@@ -1,24 +1,46 @@
+<p align="center">
+  <img src="android/app/src/main/res/drawable-nodpi/alocard_logo.png" alt="AloCard" width="96" />
+</p>
+
 # AloCard
 
-本地优先的信用卡管理工具：管住院账单日、最后还款日与免息期，并在每次消费前给出「今天该刷哪张卡」的免息期排序建议。
+本地优先的信用卡管理 App：管理账单日、还款日、免息期、账单与额度，并在消费前给出「今天该刷哪张卡」的参考。
 
-**不连接银行、没有账号、不出网**——账单金额与还款记录全部由持卡人手工录入；卡号本地加密存储。唯一的网络用途是检查应用更新（GitHub Release），可自行断开使用。
-
-## 功能
-
-- **今日刷卡推荐**：免息期是「今天视角」的动态值（账单日当天最短、次日最长），按免息期降序即推荐顺序
-- **还款倒计时**：距还款日天数 + 到期/逾期文字标记 + 一格一天的账簿格带
-- **账单组模型**：同银行多卡共享账期与额度，不重复计数
-- **账单历史**：按期滚动存档，覆盖式录入、累计式还款、可撤销上次标记
-- **额度总览**：总授信 / 已用 / 剩余可用（诚实标注估算口径）
-- **卡号安全**：AES-256-GCM 加密存储，默认脱敏，查看需 6 位安全密码，支持生物识别应用锁
-- **提醒**：还款前 3/1/0 天、账单日次日录入引导、卡片到期前 30 天；小组件按尺寸展示免息期与待还记录
-- **加密备份**：PBKDF2 + AES-256-GCM 容器，可跨设备恢复
-- **在线更新**：检查 GitHub 最新 Release 并下载安装（应用内完成）
+[![License](https://img.shields.io/badge/license-MIT-gold)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/alosir/AloCard)](https://github.com/alosir/AloCard/releases/latest)
+[![Android](https://img.shields.io/badge/platform-Android-3DDC84)](android/)
 
 ## 下载
 
-最新 Release APK（含更新日志）：<https://github.com/alosir/AloCard/releases/latest>
+- 官网：<https://card.alosir.com>
+- GitHub Release：<https://github.com/alosir/AloCard/releases/latest>
+- 阿里云镜像：<https://card.alosir.com/download/AloCard-latest.apk>
+
+## 功能
+
+- **免息期推荐**：按当天视角计算每张卡的最长免息期，并给出今日刷卡顺序。
+- **账单管理**：手工录入账单金额，支持 0 元账单、部分还款、累计还款与撤销上次还款。
+- **灵活账期**：账单日支持 1–31 号，无此日期自动取月末；还款日支持“账单日推后 N 天”或“每月固定日期”。
+- **同银行合并**：同银行多张卡共享账期与额度；额度页按银行聚合，多卡只取最高额度。
+- **账单历史**：按期保存账单记录，支持剩余待还、已结清、逾期等状态。
+- **桌面组件**：今日免息期与近期待还组件，随尺寸自动调整展示数量，并在数据变化后自动刷新。
+- **拍照识别**：手动拍照识别卡号与有效期；识别结果本地处理，不上传。
+- **图标库**：内置主流银行 Logo，也支持导入本地图片并圆形裁剪。
+- **安全保护**：4 位数字密码、指纹解锁、卡号 AES-256-GCM 加密存储、加密备份与恢复。
+- **离线识别**：内置银行卡号段表，支持号段预览与搜索；识别不到时可手动修改。
+- **应用内更新**：从 GitHub Release 检查并下载新版本。
+
+## 隐私原则
+
+AloCard 不连接银行、不需要账号、不做云同步。账单、卡号、还款记录和自定义图标均保存在本机；卡号使用 AES-256-GCM 加密存储。唯一联网能力是检查应用更新。
+
+## 技术栈
+
+- Kotlin + Jetpack Compose
+- Room + Hilt + WorkManager
+- CameraX + ML Kit 文字识别
+- RemoteViews 桌面小组件
+- 本地日期引擎：JS 事实来源 + Kotlin 等价移植
 
 ## 构建
 
@@ -26,34 +48,45 @@
 
 ```bash
 cd android
-./gradlew assembleDebug      # 调试包
-./gradlew assembleRelease    # 发布包（需签名配置，见 android/README.md）
+./gradlew assembleDebug
+./gradlew assembleRelease   # 需要本地签名配置
 ```
 
-## 验证
+## 测试
 
 ```bash
-node --test engine/dateEngine.test.js   # 日期引擎（事实来源）17 用例
-node android/run-jvm-tests.js test      # Kotlin 域层 35 用例，与 JS 版逐条等价
+node --test engine/dateEngine.test.js
+node android/run-jvm-tests.js test
 ```
+
+日期引擎以 `engine/dateEngine.js` 为事实来源，Kotlin 版本与它使用同一组核心用例。
 
 ## 仓库结构
 
 | 目录 | 内容 |
 | --- | --- |
-| `android/` | Android 应用本体（Kotlin + Jetpack Compose + Room），详见 [android/README.md](android/README.md) |
-| `engine/` | 日期引擎 JS 事实来源 + 测试 + 离线号段表 |
-| `prototype/` | 高保真 HTML 交互原型（双击 `index.html` 即可打开） |
-| `bin-data/` | 号段表生成脚本与上游数据（bcbc 数据集，MIT） |
+| `android/` | Android 应用源码、资源、Room schema 与 JVM 测试 |
+| `engine/` | 日期引擎事实来源、测试与内置号段表 |
+| `bin-data/` | 号段表源数据、官方来源补充与生成脚本 |
+| `scripts/` | GitHub 同步与发版脚本 |
 
-## 版本与更新日志
+## 数据与素材来源
 
-- 版本号规则：三段式 `v主版本.次版本.修订号`；`versionCode` 每次发布递增
-- 更新日志：[CHANGELOG.md](CHANGELOG.md)（应用内「设置 → 更新日志」同步展示）
+- 号段表基础数据来自开源项目 [hexindai/bcbc](https://github.com/hexindai/bcbc)（MIT），并补充了银行官网公告中可核验的号段。
+- 银行 Logo 来自开源图标素材与用户提供的素材；商标归各银行所有，仅用于发卡行识别展示。
 
-## 许可证
+## 贡献
 
-源码以 MIT 协议开源。
+欢迎提交 Issue 和 Pull Request。请确保：
 
-- 号段数据：bcbc 中国银行卡 BIN 数据集（MIT，快照与许可见 `engine/bin-table.json` 的 meta）
-- 银行 logo：[cellier/bank-icon-cn](https://github.com/cellier/bank-icon-cn)（Ping++ 开源银行图标库，18 家主流银行；商标归各银行所有，仅作发卡行标识展示）
+- 日期规则同时更新 JS 与 Kotlin 两侧；
+- 金额以“分”为单位存储；
+- 不提交个人账单数据、签名文件或构建产物。
+
+## License
+
+[MIT](LICENSE)
+
+## 版本记录
+
+见 [CHANGELOG.md](CHANGELOG.md)。

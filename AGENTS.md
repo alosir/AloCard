@@ -23,6 +23,17 @@ bash scripts/release.sh <versionName> <versionCode>   # 如：release.sh 1.1.0 2
 
 发版前记得在 `CHANGELOG.md` 顶部补充该版本的更新条目（格式见文件头注释）。
 
+## 官网与阿里云镜像（每次发版自动同步）
+
+- 官网源码在本地 `website/`（**不入库**，已 gitignore），线上地址 <https://card.alosir.com>，
+  托管在阿里云 ECS `i-0jl74tl0h58wis1uui3i` 的 `/var/www/card`（Apache vhost `card.alosir.com.conf`，
+  `/download/` 为 APK 直链目录）。域名 `card.allosir.com` 在 vhost 中兼容保留（该域名尚未注册）。
+- `scripts/release.sh` 发版后会自动调用 `scripts/deploy-website.sh <versionName>`：
+  同步官网文件（md5 对比）并把 `releases/AloCard-v<X>.apk` 上传为
+  `/var/www/card/download/AloCard-latest.apk`（及版本名副本），sha256 校验一致才算完成。
+- 改了官网想单独上线：`bash scripts/deploy-website.sh`（不带版本号则只同步网页）。
+- 设计源稿与三方向探索在 `website/design-demos/`（含 spec、方向卡、打磨日志、截图）。
+
 ## 仓库边界（开源准备，勿越界）
 
 - **不上传**：产品设计与技术实施文档（`PRODUCT.md` `DESIGN.md` `CONTEXT.md` `docs/`）、`.impeccable/`、`.workbuddy/`、
